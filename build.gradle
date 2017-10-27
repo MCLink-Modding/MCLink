@@ -23,7 +23,6 @@ repositories {
 dependencies {
     compile 'com.google.guava:guava:17.0'
     compile 'com.google.code.gson:gson:2.2.4'
-    compile 'org.apache.logging.log4j:log4j-api:2.0-beta9'
 }
 
 task setupDecompWorkspace
@@ -31,11 +30,11 @@ task setupDevWorkspace
 task setupCiWorkspace
 
 subprojects {
-    version = minecraft.version  + "-" + rootProject.version
-    
+
     dependencies {
         compile rootProject
     }
+
     sourceSets.main.resources.srcDirs += rootProject.sourceSets.main.resources.srcDirs
 
     jar {
@@ -43,29 +42,36 @@ subprojects {
         from rootProject.sourceSets.main.output
     }
 
-    sourceJar {
-        duplicatesStrategy = 'exclude'
-        from rootProject.sourceSets.main.allSource
-    }
-    
-    processResources
+    if (project.hasProperty('minecraft'))
     {
-        inputs.property "version", project.version
-        inputs.property "mcversion", project.minecraft.version
-
-        from(sourceSets.main.resources.srcDirs) {
-            include 'mcmod.info'
-            expand 'version':project.version, 'mcversion':project.minecraft.version
+        sourceJar {
+            duplicatesStrategy = 'exclude'
+            from rootProject.sourceSets.main.allSource
         }
 
-        from(sourceSets.main.resources.srcDirs) {
-            exclude 'mcmod.info'
+        project.tasks.withType(Jar) { jarTask ->
+            jarTask.appendix = project.minecraft.version
         }
+
+        processResources
+        {
+            inputs.property "version", project.version
+            inputs.property "mcversion", project.minecraft.version
+
+            from(sourceSets.main.resources.srcDirs) {
+                include 'mcmod.info'
+                expand 'version':project.version, 'mcversion':project.minecraft.version
+            }
+
+            from(sourceSets.main.resources.srcDirs) {
+                exclude 'mcmod.info'
+            }
+        }
+
+        rootProject.setupDecompWorkspace.dependsOn setupDecompWorkspace
+        rootProject.setupDevWorkspace.dependsOn setupDevWorkspace
+        rootProject.setupCiWorkspace.dependsOn setupCiWorkspace
     }
 
-    rootProject.setupDecompWorkspace.dependsOn setupDecompWorkspace
-    rootProject.setupDevWorkspace.dependsOn setupDevWorkspace
-    rootProject.setupCiWorkspace.dependsOn setupCiWorkspace
     rootProject.build.dependsOn build
-    rootProject.uploadArchives.dependsOn uploadArchives
 }
