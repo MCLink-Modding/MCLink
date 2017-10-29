@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
-import static net.dries007.mclink.api.API.TYPE_MAP_STRING_STRING;
+import static net.dries007.mclink.api.Constants.TYPE_MAP_STRING_STRING;
 
 /**
  * @author Dries007

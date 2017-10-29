@@ -6,7 +6,7 @@ package net.dries007.mclink.api;
  * @author Dries007
  */
 @SuppressWarnings("WeakerAccess")
-public class APIException extends Throwable
+public class APIException extends Exception
 {
     public final int status;
 

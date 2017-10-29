@@ -14,6 +14,8 @@ import java.net.URLEncoder;
 import java.util.*;
 import java.util.Map.Entry;
 
+import static net.dries007.mclink.api.Constants.TYPE_MAP_STRING_STRING;
+
 /**
  * All API interactions should be done via this class.
  *
@@ -22,7 +24,7 @@ import java.util.Map.Entry;
  *
  * @author Dries007
  */
-@SuppressWarnings("WeakerAccess")
+@SuppressWarnings({"WeakerAccess", "unused"})
 public final class API
 {
     public static final URL URL_STATUS = getURL("status");
@@ -50,23 +52,32 @@ public final class API
     }
 
     /**
+     * Set the timeouts for this API.
+     * Make sure they are log enough because the backend needs to have time to make requests to all services you require.
+     * @param timeout
+     */
+    public static void setTimeout(int timeout)
+    {
+        if (timeout < 0) throw new IllegalArgumentException("No negative timeouts! 0 = infinite.");
+        API.timeout = timeout;
+    }
+
+    /**
      * Request the current server status.
      * @return Status
      */
     public static Status getStatus() throws IOException, APIException
     {
-        JsonObject root = doGetRequest(URL_STATUS).getAsJsonObject();
-        return GSON.fromJson(root, Status.class);
+        return GSON.fromJson(doGetRequest(URL_STATUS), Status.class);
     }
 
     /**
      * Get a list of services currently fit for use.
      * @return Service[]
      */
-    public static ImmutableList<Service> getServices() throws IOException, APIException
+    public static ImmutableMap<String, Service> getServices() throws IOException, APIException
     {
-        JsonObject root = doGetRequest(URL_SERVICES).getAsJsonObject();
-        return ImmutableList.copyOf(GSON.fromJson(root, Service[].class));
+        return ImmutableMap.copyOf(GSON.<Map<String, Service>>fromJson(doGetRequest(URL_SERVICES), new TypeToken<Map<String, Service>>(){}.getType()));
     }
 
     /**
@@ -218,8 +229,8 @@ public final class API
             con.setRequestMethod("GET");
             con.setInstanceFollowRedirects(true);
             con.setAllowUserInteraction(false);
-            con.setConnectTimeout(Constants.TIMEOUT);
-            con.setReadTimeout(Constants.TIMEOUT);
+            con.setConnectTimeout(timeout);
+            con.setReadTimeout(timeout);
             con.setRequestProperty("User-Agent", userAgent);
             con.setRequestProperty("Accept-Charset", Constants.UTF8.name());
             con.setRequestProperty("Accept", "application/json");
@@ -270,8 +281,8 @@ public final class API
             con.setRequestMethod("POST");
             con.setInstanceFollowRedirects(true);
             con.setAllowUserInteraction(false);
-            con.setConnectTimeout(Constants.TIMEOUT);
-            con.setReadTimeout(Constants.TIMEOUT);
+            con.setConnectTimeout(timeout);
+            con.setReadTimeout(timeout);
             con.setDoOutput(true);
             con.setRequestProperty("User-Agent", userAgent);
             con.setRequestProperty("Accept-Charset", Constants.UTF8.name());
@@ -289,9 +300,9 @@ public final class API
     // -- PRIVATES --
 
     private static String userAgent;
-    static Type TYPE_MAP_STRING_STRING = new TypeToken<Map<String, String>>(){}.getType();
+    private static int timeout;
     private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().serializeNulls()
-            .registerTypeAdapter(Service[].class, new Service.Gson())
+            .registerTypeAdapter(Service.class, new Service.Gson())
             .registerTypeAdapter(Status.class, new Status.Gson())
             .registerTypeAdapter(Authentication.class, new Authentication.Gson())
             .setPrettyPrinting()
@@ -300,6 +311,7 @@ public final class API
     static
     {
         setMetaData(null, null);
+        timeout = 30000;
     }
 
     private API() { throw new AssertionError("No API instances for you!"); }
