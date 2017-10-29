@@ -1,0 +1,8 @@
+name: MCLink
+version: @version@
+main: net.dries007.mclink.MCLink
+prefix: MCLink
+load: STARTUP
+authors: [Dries007]
+description: Automatic whitelist management
+website: https://mclink.dries007.net
