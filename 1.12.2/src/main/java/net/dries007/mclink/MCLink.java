@@ -7,11 +7,13 @@ import com.mojang.authlib.GameProfile;
 import net.dries007.mclink.api.*;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
+import net.minecraft.command.CommandNotFoundException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.NetHandlerPlayServer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.management.PlayerList;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TextComponentString;
@@ -29,6 +31,7 @@ import net.minecraftforge.fml.common.gameevent.PlayerEvent.PlayerLoggedInEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -62,12 +65,14 @@ public class MCLink
     private Table<String, String, List<String>> tokenConfig;
     private ImmutableMap<String, UUID> tokenUUIDMap;
     private ITextComponent kickMessage;
+    private ITextComponent errorMessage;
+    private ITextComponent closedMessage;
     private boolean showStatus;
     private boolean closed;
 
     private enum Marker
     {
-        ALLOWED, IN_PROGRESS, DENIED
+        ALLOWED, IN_PROGRESS, DENIED_NO_AUTH, DENIED_ERROR, DENIED_CLOSED
     }
 
     @Mod.EventHandler
@@ -105,7 +110,7 @@ public class MCLink
             {
                 if (args.length == 0)
                 {
-                    sender.sendMessage(new TextComponentString("Subcommands:"));
+                    sender.sendMessage(new TextComponentString("Subcommands:").setStyle(new Style().setColor(TextFormatting.AQUA)));
                     sender.sendMessage(new TextComponentString("- close: Do not let anyone join via MCLink. Ops and manually whitelisted players can still join."));
                     sender.sendMessage(new TextComponentString("- open: Let people join via MCLink again."));
                     sender.sendMessage(new TextComponentString("- reload: Reload all configs & API status. May take a few moments."));
@@ -132,12 +137,23 @@ public class MCLink
                             sender.sendMessage(new TextComponentString("ERROR reloading config. See log for more info.").setStyle(new Style().setColor(TextFormatting.RED)));
                             throw new CommandException(e.getMessage());
                         }
+                        sender.sendMessage(new TextComponentString("Reloaded.").setStyle(new Style().setColor(TextFormatting.GREEN)));
+                        //fallthrough
                     case "status":
-                        sender.sendMessage(new TextComponentString("The server is currently {}" + (closed ? "CLOSED" : "OPENED")));
+                        sender.sendMessage(new TextComponentString("The server is currently " + (closed ? "CLOSED" : "OPENED")));
                         if (Constants.API_VERSION < status.apiVersion) sender.sendMessage(new TextComponentString("[MCLink] API version outdated. Please update ASAP"));
                         if (status.message != null) sender.sendMessage(new TextComponentString("[MCLink] ").appendText(status.message));
                         break;
+                    default:
+                        throw new CommandNotFoundException("Subcommand not found.");
                 }
+            }
+
+            @Override
+            public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args, @Nullable BlockPos targetPos)
+            {
+                if (args.length == 1) return getListOfStringsMatchingLastWord(args, "close", "open", "reload", "status");
+                return super.getTabCompletions(server, sender, args, targetPos);
             }
 
             private void changeClosed(ICommandSender sender, boolean closed)
@@ -146,64 +162,58 @@ public class MCLink
                 forgeConfig.get(CATEGORY_GENERAL, "closed", false).set(closed);
                 forgeConfig.save();
                 logger.info("The server is now {}!", closed ? "CLOSED" : "OPENED");
-                sender.sendMessage(new TextComponentString("The server is currently {}" + (closed ? "CLOSED" : "OPENED")));
+                sender.sendMessage(new TextComponentString("The server is currently " + (closed ? "CLOSED" : "OPENED")));
             }
         });
     }
 
+    @SuppressWarnings("ConstantConditions")
     @SubscribeEvent
     public void connectEvent(final FMLNetworkEvent.ServerConnectionFromClientEvent event)
     {
         GameProfile gp = ((NetHandlerPlayServer) event.getHandler()).player.getGameProfile();
         final String name = gp.getName();
         final UUID uuid = gp.getId();
+        PlayerList pl = server().getPlayerList();
 
         if (event.isLocal())
         {
             logger.info("Player {} [{}] was authorized because SSP", name, uuid);
             UUID_STATUS_MAP.put(uuid, Marker.ALLOWED);
-            return;
         }
-
-        PlayerList pl = server().getPlayerList();
-        //noinspection ConstantConditions
-        if (pl.getOppedPlayers().getEntry(gp) != null)
+        else if (pl.getOppedPlayers().getEntry(gp) != null)
         {
             logger.info("Player {} [{}] was authorized because they are on the OP list.", name, uuid);
             UUID_STATUS_MAP.put(uuid, Marker.ALLOWED);
-            return;
         }
-        //noinspection ConstantConditions
-        if (pl.getWhitelistedPlayers().getEntry(gp) != null)
+        else if (pl.getWhitelistedPlayers().getEntry(gp) != null)
         {
             logger.info("Player {} [{}] was authorized because they are on the whitelist.", name, uuid);
             UUID_STATUS_MAP.put(uuid, Marker.ALLOWED);
-            return;
         }
-
-        if (closed)
+        else if (closed)
         {
             logger.info("Player {} [{}] denied access because server is closed.", name, uuid);
-            UUID_STATUS_MAP.put(uuid, Marker.DENIED);
+            UUID_STATUS_MAP.put(uuid, Marker.DENIED_CLOSED);
         }
-
-        if (CACHE.getIfPresent(uuid) != null)
+        else if (CACHE.getIfPresent(uuid) != null)
         {
             logger.info("Player {} [{}] was authorized cached auth entries.", name, uuid);
             UUID_STATUS_MAP.put(uuid, Marker.ALLOWED);
-            return;
         }
-
-        UUID_STATUS_MAP.put(uuid, Marker.IN_PROGRESS);
-        logger.info("Player {} [{}] authorization is being checked...", name, uuid);
-        new Thread(new Runnable()
-            {
-                @Override
-                public void run()
+        else
+        {
+            UUID_STATUS_MAP.put(uuid, Marker.IN_PROGRESS);
+            logger.info("Player {} [{}] authorization is being checked...", name, uuid);
+            new Thread(new Runnable()
                 {
-                    check(name, uuid);
-                }
-            }, "MCLink " + name).start();
+                    @Override
+                    public void run()
+                    {
+                        check(name, uuid);
+                    }
+                }, "MCLink " + name).start();
+        }
     }
 
     @SubscribeEvent
@@ -211,10 +221,17 @@ public class MCLink
     {
         // If the map has it set to DENIED already, the lookup finished before we got here and we can kick the player.
         // If the marker was something else, we remove the marker to the async thread knows it needs to kick the player itself.
-        if (UUID_STATUS_MAP.remove(event.player.getGameProfile().getId()) == Marker.DENIED)
+        switch (UUID_STATUS_MAP.remove(event.player.getGameProfile().getId()))
         {
-            ((EntityPlayerMP) event.player).connection.disconnect(kickMessage);
-            return;
+            case DENIED_NO_AUTH:
+                ((EntityPlayerMP) event.player).connection.disconnect(kickMessage);
+                return;
+            case DENIED_ERROR:
+                ((EntityPlayerMP) event.player).connection.disconnect(errorMessage);
+                return;
+            case DENIED_CLOSED:
+                ((EntityPlayerMP) event.player).connection.disconnect(closedMessage);
+                return;
         }
         if (showStatus && event.player.canUseCommand(3, "mclink"))
         {
@@ -237,9 +254,9 @@ public class MCLink
             if (auth.isEmpty())
             {
                 logger.info("Player {} [{}] was denied.", name, uuid);
-                if (UUID_STATUS_MAP.put(uuid, Marker.DENIED) == null) // was already removed by login
+                if (UUID_STATUS_MAP.put(uuid, Marker.DENIED_NO_AUTH) == null) // was already removed by login
                 {
-                    kickAsync(uuid);
+                    kickAsync(uuid, kickMessage);
                 }
             }
             else
@@ -262,14 +279,14 @@ public class MCLink
         {
             logger.info("Player {} [{}] was denied due to an exception.", name, uuid);
             logger.catching(e);
-            if (UUID_STATUS_MAP.put(uuid, Marker.DENIED) == null) // was already removed by login
+            if (UUID_STATUS_MAP.put(uuid, Marker.DENIED_ERROR) == null) // was already removed by login
             {
-                kickAsync(uuid);
+                kickAsync(uuid, errorMessage);
             }
         }
     }
 
-    private void kickAsync(final UUID uuid)
+    private void kickAsync(final UUID uuid, final ITextComponent msg)
     {
         UUID_STATUS_MAP.remove(uuid); // login event already past, so we don't need this anymore.
         server().addScheduledTask(new Runnable()
@@ -281,7 +298,7 @@ public class MCLink
                 //noinspection ConstantConditions
                 if (p != null) // The player may have disconnected before this could happen.
                 {
-                    p.connection.disconnect(kickMessage);
+                    p.connection.disconnect(msg);
                 }
             }
         });
@@ -336,6 +353,8 @@ public class MCLink
         }
 
         String kickMessage = forgeConfig.getString("kickMessage", CATEGORY_GENERAL, "This is an MCLink protected server. Link your accounts via " + Constants.BASE_URL + " and make sure you are subscribed to the right people.", "The message used to kickAsync players. Make sure to include instructions on how to get on!");
+        String errorMessage = forgeConfig.getString("errorMessage", CATEGORY_GENERAL, "MCLink could not verify your status. Please contact a server admin.", "The message people get when an error happens while MCLink checks their ID.");
+        String closedMessage = forgeConfig.getString("closedMessage", CATEGORY_GENERAL, "The server is currently closed for the public.", "The message people get when the server is closed.");
         boolean showStatus = forgeConfig.getBoolean("showStatus", CATEGORY_GENERAL, true, "Show important status messages to level 2+ OP players when they log in.");
         boolean closed = forgeConfig.getBoolean("closed", CATEGORY_GENERAL, false, "Use the ingame command /mclink to update this.\nKeeps track of if the server is closed.");
         int timeout = forgeConfig.getInt("timeout", CATEGORY_GENERAL, 30, 0, 300, "Timeout for the API requests in seconds. Keep this high enough to avoid players being kicked while actually being authorized. 0 = infinite timeout") * 1000;
@@ -355,6 +374,8 @@ public class MCLink
         this.tokenConfig = tokenConfig;
         this.tokenUUIDMap = tokenUUIDMap;
         this.kickMessage = new TextComponentString(kickMessage);
+        this.errorMessage = new TextComponentString(errorMessage);
+        this.closedMessage = new TextComponentString(closedMessage);
         this.showStatus = showStatus;
         if (this.closed != closed) {
             this.closed = closed;
