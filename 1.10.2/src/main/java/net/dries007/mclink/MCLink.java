@@ -64,9 +64,9 @@ public class MCLink
     private ImmutableMap<String, Service> services;
     private Table<String, String, List<String>> tokenConfig;
     private ImmutableMap<String, UUID> tokenUUIDMap;
-    private ITextComponent kickMessage;
-    private ITextComponent errorMessage;
-    private ITextComponent closedMessage;
+    private String kickMessage;
+    private String errorMessage;
+    private String closedMessage;
     private boolean showStatus;
     private boolean closed;
 
@@ -171,7 +171,7 @@ public class MCLink
     @SubscribeEvent
     public void connectEvent(final FMLNetworkEvent.ServerConnectionFromClientEvent event)
     {
-        GameProfile gp = ((NetHandlerPlayServer) event.getHandler()).player.getGameProfile();
+        GameProfile gp = ((NetHandlerPlayServer) event.getHandler()).playerEntity.getGameProfile();
         final String name = gp.getName();
         final UUID uuid = gp.getId();
         PlayerList pl = server().getPlayerList();
@@ -286,7 +286,7 @@ public class MCLink
         }
     }
 
-    private void kickAsync(final UUID uuid, final ITextComponent msg)
+    private void kickAsync(final UUID uuid, final String msg)
     {
         UUID_STATUS_MAP.remove(uuid); // login event already past, so we don't need this anymore.
         server().addScheduledTask(new Runnable()
@@ -375,9 +375,9 @@ public class MCLink
         this.services = services;
         this.tokenConfig = tokenConfig;
         this.tokenUUIDMap = tokenUUIDMap;
-        this.kickMessage = new TextComponentString(kickMessage);
-        this.errorMessage = new TextComponentString(errorMessage);
-        this.closedMessage = new TextComponentString(closedMessage);
+        this.kickMessage = kickMessage;
+        this.errorMessage = errorMessage;
+        this.closedMessage = closedMessage;
         this.showStatus = showStatus;
         if (this.closed != closed)
         {

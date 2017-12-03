@@ -1,0 +1,15 @@
+{
+  "modListVersion": 2,
+  "modList": [{
+    "modid": "mclink",
+    "name": "MCLink",
+    "description": "Automatic subscriber whitelist management",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "https://mclink.dries007.net/",
+    "updateJSON": "https://mc.dries007.net/mclink.json",
+    "authorList": [ "Dries007" ],
+    "credits": "Dries007",
+    "logoFile": ""
+  }]
+}
