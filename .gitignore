@@ -1,3 +1,6 @@
+# the forge version update json file
+mclink.json
+
 # gradle stuff
 build
 .gradle

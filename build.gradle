@@ -1,3 +1,7 @@
+import groovy.json.JsonBuilder
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+
 evaluationDependsOnChildren()
 
 apply plugin: 'java'
@@ -5,6 +9,7 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 
 version = "0.1.1"
+if (System.getenv().BUILD_NUMBER != null) version += "." + System.getenv().BUILD_NUMBER
 
 allprojects {
     group = "net.dries007.mclink"
@@ -29,6 +34,10 @@ task setupDecompWorkspace
 task setupDevWorkspace
 task setupCiWorkspace
 
+project.tasks.withType(Jar) { jarTask ->
+    jarTask.appendix = 'lib'
+}
+
 subprojects {
 
     version = rootProject.version
@@ -52,7 +61,7 @@ subprojects {
         }
 
         project.tasks.withType(Jar) { jarTask ->
-            jarTask.appendix = project.minecraft.version
+            jarTask.appendix = 'Forge-' + project.minecraft.version
         }
 
         processResources
@@ -68,11 +77,46 @@ subprojects {
             from(sourceSets.main.resources.srcDirs) {
                 exclude 'mcmod.info'
             }
+
+            doLast {
+                def updateFile = new File(project.archivesBaseName.toLowerCase() + '.json')
+                def json
+                if (updateFile.exists()) {
+                    json = new JsonSlurper().parseText(updateFile.getText())
+                }
+                else {
+                    def builder = new JsonBuilder()
+                    json = builder(
+                        homepage: "https://mclink.dries007.net",
+                        promos: new HashMap<>()
+                    )
+                }
+                def outStream = new ByteArrayOutputStream()
+                def result = exec {
+                    executable = 'git'
+                    args = [ 'log', '-n', '1', "--format='%B'"]
+                    standardOutput = outStream
+                }
+                def fullLog = outStream.toString().replaceAll("^\\s*'\\s*|\\s*'\\s*\$", "").replaceAll("[\\r\\n]+", "\n")
+
+                json['promos'][project.minecraft.version + '-latest'] = project.version
+                json['promos'][project.minecraft.version + '-recommended'] = project.version
+                if (!json.containsKey(project.minecraft.version)) json.put(project.minecraft.version, new HashMap<>())
+                def version = json[project.minecraft.version]
+                version.put(project.version, fullLog)
+                updateFile.write JsonOutput.prettyPrint(JsonOutput.toJson(json))
+            }
         }
 
         rootProject.setupDecompWorkspace.dependsOn setupDecompWorkspace
         rootProject.setupDevWorkspace.dependsOn setupDevWorkspace
         rootProject.setupCiWorkspace.dependsOn setupCiWorkspace
+    }
+    else
+    {
+        project.tasks.withType(Jar) { jarTask ->
+            jarTask.appendix = project.name
+        }
     }
 
     rootProject.build.dependsOn build
