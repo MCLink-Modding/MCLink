@@ -4,6 +4,7 @@ mclink.json
 # gradle stuff
 build
 .gradle
+gradle.properties
 
 # eclipse stuff
 .classpath

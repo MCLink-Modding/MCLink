@@ -7,10 +7,27 @@ buildscript {
         classpath 'net.minecraftforge.gradle:ForgeGradle:2.2-SNAPSHOT'
     }
 }
+
+plugins {
+    id "com.matthewprenger.cursegradle" version "1.0.9"
+}
+
 apply plugin: 'net.minecraftforge.gradle.forge'
 
 minecraft {
     version = "1.10.2-12.18.3.2185"
     runDir = "run"
     mappings = "stable_29"
+}
+
+curseforge {
+    apiKey = project.hasProperty('curseforge.apiKey.dries007') ? project['curseforge.apiKey.dries007'] : 'KAPUT'
+    project {
+        id = '281020'
+        releaseType = 'beta'
+        changelog = rootProject.getChangeLog() + '\n[Automatic build]'
+    }
+    options {
+        javaVersionAutoDetect = false
+    }
 }
