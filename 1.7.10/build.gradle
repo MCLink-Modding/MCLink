@@ -1,0 +1,40 @@
+buildscript {
+    repositories {
+        jcenter()
+        maven { url = "http://files.minecraftforge.net/maven" }
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:1.2-SNAPSHOT'
+    }
+}
+
+plugins {
+    id "com.matthewprenger.cursegradle" version "1.0.9"
+}
+
+apply plugin: 'forge'
+
+minecraft {
+    version = "1.7.10-10.13.4.1614-1.7.10"
+    runDir = "run"
+    mcpVersion = "12"
+}
+
+task sourceJar(type: Jar) {
+    from "LICENSE.txt"
+    from sourceSets.main.allSource
+    classifier = 'src'
+    appendix = project.minecraft.version
+}
+
+curseforge {
+    apiKey = project.hasProperty('curseforge.apiKey.dries007') ? project['curseforge.apiKey.dries007'] : 'KAPUT'
+    project {
+        id = '281020'
+        releaseType = 'beta'
+        changelog = rootProject.getChangeLog() + '\n[Automatic build]'
+    }
+    options {
+        javaVersionAutoDetect = false
+    }
+}

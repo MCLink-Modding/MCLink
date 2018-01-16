@@ -1,43 +1,47 @@
 package net.dries007.mclink;
 
+import com.google.common.base.Throwables;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.*;
 import com.mojang.authlib.GameProfile;
+import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.Mod;
+import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import cpw.mods.fml.common.event.FMLServerStartingEvent;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.PlayerEvent;
+import cpw.mods.fml.common.gameevent.TickEvent;
+import cpw.mods.fml.common.network.FMLNetworkEvent;
+import cpw.mods.fml.relauncher.ReflectionHelper;
 import net.dries007.mclink.api.*;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandNotFoundException;
 import net.minecraft.command.ICommandSender;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.NetHandlerPlayServer;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.management.PlayerList;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.Style;
-import net.minecraft.util.text.TextComponentString;
-import net.minecraft.util.text.TextFormatting;
+import net.minecraft.server.management.UserList;
+import net.minecraft.server.management.UserListOps;
+import net.minecraft.server.management.UserListWhitelist;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.ChatStyle;
+import net.minecraft.util.EnumChatFormatting;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.config.ConfigCategory;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.common.config.Property;
-import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.PlayerEvent.PlayerLoggedInEvent;
-import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -59,6 +63,8 @@ public class MCLink
     private static final Pattern SPLIT_PATTERN = Pattern.compile("(?:(['\"])(.*?)(?<!\\\\)(?>\\\\\\\\)*\\1|([^\\s]+))");
     private static final Cache<UUID, ImmutableCollection<Authentication>> CACHE = CacheBuilder.newBuilder().expireAfterWrite(24, TimeUnit.HOURS).build();
     private static final ConcurrentHashMap<UUID, Marker> UUID_STATUS_MAP = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<UUID, String> TO_KICK = new ConcurrentHashMap<>();
+    private static final Method METHOD_USERLIST_CONTAINS = ReflectionHelper.findMethod(UserList.class, null, new String[]{"func_152692_d"}, Object.class);
 
     private Logger logger;
     private Configuration forgeConfig;
@@ -97,27 +103,27 @@ public class MCLink
         event.registerServerCommand(new CommandBase()
         {
             @Override
-            public String getName()
+            public String getCommandName()
             {
                 return "mclink";
             }
 
             @Override
-            public String getUsage(ICommandSender sender)
+            public String getCommandUsage(ICommandSender sender)
             {
                 return "/mclink [close|open|reload|status]";
             }
 
             @Override
-            public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException
+            public void processCommand(ICommandSender sender, String[] args) throws CommandException
             {
                 if (args.length == 0)
                 {
-                    sender.sendMessage(new TextComponentString("Subcommands:").setStyle(new Style().setColor(TextFormatting.AQUA)));
-                    sender.sendMessage(new TextComponentString("- close: Do not let anyone join via MCLink. Ops and manually whitelisted players can still join."));
-                    sender.sendMessage(new TextComponentString("- open: Let people join via MCLink again."));
-                    sender.sendMessage(new TextComponentString("- reload: Reload all configs & API status. May take a few moments."));
-                    sender.sendMessage(new TextComponentString("- status: Get current open/closed status & any API messages."));
+                    sender.addChatMessage(new ChatComponentText("Subcommands:").setChatStyle(new ChatStyle().setColor(EnumChatFormatting.AQUA)));
+                    sender.addChatMessage(new ChatComponentText("- close: Do not let anyone join via MCLink. Ops and manually whitelisted players can still join."));
+                    sender.addChatMessage(new ChatComponentText("- open: Let people join via MCLink again."));
+                    sender.addChatMessage(new ChatComponentText("- reload: Reload all configs & API status. May take a few moments."));
+                    sender.addChatMessage(new ChatComponentText("- status: Get current open/closed status & any API messages."));
                     return;
                 }
 
@@ -133,19 +139,19 @@ public class MCLink
                         try
                         {
                             reload();
-                            sender.sendMessage(new TextComponentString("Reloaded. Check log for possible warnings.").setStyle(new Style().setColor(TextFormatting.YELLOW)));
+                            sender.addChatMessage(new ChatComponentText("Reloaded. Check log for possible warnings.").setChatStyle(new ChatStyle().setColor(EnumChatFormatting.YELLOW)));
                         }
                         catch (Exception e)
                         {
                             logger.error("Error while reloading!", e);
-                            sender.sendMessage(new TextComponentString("ERROR reloading config. See log for more info.").setStyle(new Style().setColor(TextFormatting.RED)));
+                            sender.addChatMessage(new ChatComponentText("ERROR reloading config. See log for more info.").setChatStyle(new ChatStyle().setColor(EnumChatFormatting.RED)));
                             throw new CommandException(e.getMessage());
                         }
                         //fallthrough
                     case "status":
-                        sender.sendMessage(new TextComponentString("The server is currently " + (closed ? "CLOSED" : "OPENED")));
-                        if (Constants.API_VERSION < status.apiVersion) sender.sendMessage(new TextComponentString("[MCLink] API version outdated. Please update ASAP"));
-                        if (status.message != null) sender.sendMessage(new TextComponentString("[MCLink] ").appendText(status.message));
+                        sender.addChatMessage(new ChatComponentText("The server is currently " + (closed ? "CLOSED" : "OPENED")));
+                        if (Constants.API_VERSION < status.apiVersion) sender.addChatMessage(new ChatComponentText("[MCLink] API version outdated. Please update ASAP"));
+                        if (status.message != null) sender.addChatMessage(new ChatComponentText("[MCLink] ").appendText(status.message));
                         break;
                     default:
                         throw new CommandNotFoundException("Subcommand not found.");
@@ -153,10 +159,10 @@ public class MCLink
             }
 
             @Override
-            public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args, @Nullable BlockPos targetPos)
+            public List addTabCompletionOptions(ICommandSender sender, String[] args)
             {
                 if (args.length == 1) return getListOfStringsMatchingLastWord(args, "close", "open", "reload", "status");
-                return super.getTabCompletions(server, sender, args, targetPos);
+                return super.addTabCompletionOptions(sender, args);
             }
 
             private void changeClosed(ICommandSender sender, boolean closed)
@@ -165,31 +171,49 @@ public class MCLink
                 forgeConfig.get(CATEGORY_GENERAL, "closed", false).set(closed);
                 forgeConfig.save();
                 logger.info("The server is now {0}!", closed ? "CLOSED" : "OPENED");
-                sender.sendMessage(new TextComponentString("The server is currently " + (closed ? "CLOSED" : "OPENED")));
+                sender.addChatMessage(new ChatComponentText("The server is currently " + (closed ? "CLOSED" : "OPENED")));
             }
         });
+    }
+
+    private static boolean userListContains(UserList userList, GameProfile gameProfile)
+    {
+        try
+        {
+            return (boolean) METHOD_USERLIST_CONTAINS.invoke(userList, gameProfile);
+        }
+        catch (IllegalAccessException e)
+        {
+            throw new RuntimeException(e); // This cannot happen, the method is set accessible by the ReflectionHelper
+        }
+        catch (InvocationTargetException e)
+        {
+            Throwables.propagate(e.getTargetException());
+            return false;
+        }
     }
 
     @SuppressWarnings("ConstantConditions")
     @SubscribeEvent
     public void connectEvent(final FMLNetworkEvent.ServerConnectionFromClientEvent event)
     {
-        GameProfile gp = ((NetHandlerPlayServer) event.getHandler()).playerEntity.getGameProfile();
+        GameProfile gp = ((NetHandlerPlayServer) event.handler).playerEntity.getGameProfile();
         final String name = gp.getName();
         final UUID uuid = gp.getId();
-        PlayerList pl = server().getPlayerList();
+        UserListOps ops = server().getConfigurationManager().func_152603_m();
+        UserListWhitelist whitelist = server().getConfigurationManager().func_152599_k();
 
-        if (event.isLocal())
+        if (event.isLocal)
         {
             logger.info("Player {0} [{1}] was authorized because SSP", name, uuid);
             UUID_STATUS_MAP.put(uuid, Marker.ALLOWED);
         }
-        else if (pl.getOppedPlayers().getEntry(gp) != null)
+        else if (userListContains(ops, gp))
         {
             logger.info("Player {0} [{1}] was authorized because they are on the OP list.", name, uuid);
             UUID_STATUS_MAP.put(uuid, Marker.ALLOWED);
         }
-        else if (pl.getWhitelistedPlayers().getEntry(gp) != null)
+        else if (userListContains(whitelist, gp))
         {
             logger.info("Player {0} [{1}] was authorized because they are on the whitelist.", name, uuid);
             UUID_STATUS_MAP.put(uuid, Marker.ALLOWED);
@@ -220,26 +244,26 @@ public class MCLink
     }
 
     @SubscribeEvent
-    public void loginEvent(PlayerLoggedInEvent event)
+    public void loginEvent(PlayerEvent.PlayerLoggedInEvent event)
     {
         // If the map has it set to DENIED already, the lookup finished before we got here and we can kick the player.
         // If the marker was something else, we remove the marker to the async thread knows it needs to kick the player itself.
         switch (UUID_STATUS_MAP.remove(event.player.getGameProfile().getId()))
         {
             case DENIED_NO_AUTH:
-                ((EntityPlayerMP) event.player).connection.disconnect(kickMessage);
+                ((EntityPlayerMP) event.player).playerNetServerHandler.kickPlayerFromServer(kickMessage);
                 return;
             case DENIED_ERROR:
-                ((EntityPlayerMP) event.player).connection.disconnect(errorMessage);
+                ((EntityPlayerMP) event.player).playerNetServerHandler.kickPlayerFromServer(errorMessage);
                 return;
             case DENIED_CLOSED:
-                ((EntityPlayerMP) event.player).connection.disconnect(closedMessage);
+                ((EntityPlayerMP) event.player).playerNetServerHandler.kickPlayerFromServer(closedMessage);
                 return;
         }
-        if (showStatus && event.player.canUseCommand(3, "mclink"))
+        if (showStatus && event.player.canCommandSenderUseCommand(3, "mclink"))
         {
-            if (Constants.API_VERSION < status.apiVersion) event.player.sendMessage(new TextComponentString("[MCLink] API version outdated. Please update ASAP"));
-            if (status.message != null) event.player.sendMessage(new TextComponentString("[MCLink] ").appendText(status.message));
+            if (Constants.API_VERSION < status.apiVersion) event.player.addChatMessage(new ChatComponentText("[MCLink] API version outdated. Please update ASAP"));
+            if (status.message != null) event.player.addChatMessage(new ChatComponentText("[MCLink] ").appendText(status.message));
         }
     }
 
@@ -248,6 +272,7 @@ public class MCLink
         return FMLCommonHandler.instance().getMinecraftServerInstance();
     }
 
+    @SuppressWarnings("ConstantConditions")
     private void check(String name, UUID uuid)
     {
         try
@@ -268,7 +293,7 @@ public class MCLink
                 List<String> auths = new ArrayList<>();
                 for (Authentication a : auth)
                 {
-                    GameProfile p = server().getPlayerProfileCache().getProfileByUUID(a.token);
+                    GameProfile p = server().func_152358_ax().func_152652_a(a.token);
                     auths.add(a.name + " from " + (p == null ? "?" : p.getName()) + " [" + a.token + "] with " + a.extra);
                 }
                 logger.info("Player {0} [{1}] was authorized by: {2}", name, uuid, auths);
@@ -289,22 +314,29 @@ public class MCLink
         }
     }
 
+    @SuppressWarnings("unchecked")
+    @SubscribeEvent
+    public void tickEvent(TickEvent.ServerTickEvent event)
+    {
+        if (event.phase != TickEvent.Phase.END || TO_KICK.isEmpty()) return; // short-circuit optimization
+
+        HashMap<UUID, EntityPlayerMP> map = new HashMap<>();
+        for (EntityPlayerMP o : (List<EntityPlayerMP>)server().getConfigurationManager().playerEntityList)
+        {
+            if (TO_KICK.containsKey(o.getPersistentID())) map.put(o.getPersistentID(), o);
+        }
+        for (Map.Entry<UUID, EntityPlayerMP> e : map.entrySet())
+        {
+            String message = TO_KICK.remove(e.getKey());
+            if (message == null) continue; // should not happen, but better be safe than sorry with Minecraft...
+            e.getValue().playerNetServerHandler.kickPlayerFromServer(message);
+        }
+    }
+
     private void kickAsync(final UUID uuid, final String msg)
     {
         UUID_STATUS_MAP.remove(uuid); // login event already past, so we don't need this anymore.
-        server().addScheduledTask(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                EntityPlayerMP p = server().getPlayerList().getPlayerByUUID(uuid);
-                //noinspection ConstantConditions
-                if (p != null) // The player may have disconnected before this could happen.
-                {
-                    p.connection.disconnect(msg);
-                }
-            }
-        });
+        TO_KICK.put(uuid, msg); // 1.7.10 doesn't have threading, so use server tick even to sync.
     }
 
     private void reload() throws IOException, APIException
@@ -330,10 +362,10 @@ public class MCLink
             Property p = e.getValue();
             if (s == null)
             {
-                p.setComment("THIS SERVICE IS NOT AVAILABLE.");
+                p.comment = "THIS SERVICE IS NOT AVAILABLE.";
                 continue;
             }
-            p.setComment(s.getConfigCommentString());
+            p.comment = s.getConfigCommentString();
             for (String line : p.getStringList())
             {
                 List<String> split = new ArrayList<>();

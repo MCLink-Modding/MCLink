@@ -64,7 +64,9 @@ public class Service
         StringBuilder sb = new StringBuilder();
         sb.append("Website: ").append(website).append('\n');
         sb.append("Arguments must be in this exact order. Use an empty string (\"\") to skip an argument.\n");
+        sb.append("Only put in values, not the names of the arguments.\n");
         sb.append("Required arguments:").append('\n');
+        sb.append(" - TOKEN: Your api token.").append('\n');
         for (Map.Entry<String, String> e : requiredArgs.entrySet()) sb.append(" - ").append(e.getKey()).append(": ").append(e.getValue()).append('\n');
         sb.append("Optional arguments:").append('\n');
         for (Map.Entry<String, String> e : optionalArgs.entrySet()) sb.append(" - ").append(e.getKey()).append(": ").append(e.getValue()).append('\n');

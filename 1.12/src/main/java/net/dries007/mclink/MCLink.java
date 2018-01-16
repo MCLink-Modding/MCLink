@@ -33,6 +33,7 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -86,7 +87,7 @@ public class MCLink
         MinecraftForge.EVENT_BUS.register(this);
         API.setMetaData(event.getModMetadata().version, MinecraftForge.MC_VERSION);
 
-        forgeConfig = new Configuration(event.getSuggestedConfigurationFile());
+        forgeConfig = new Configuration(event.getSuggestedConfigurationFile(), true);
 
         reload();
     }
@@ -133,6 +134,7 @@ public class MCLink
                         try
                         {
                             reload();
+                            sender.sendMessage(new TextComponentString("Reloaded. Check log for possible warnings.").setStyle(new Style().setColor(TextFormatting.YELLOW)));
                         }
                         catch (Exception e)
                         {
@@ -140,7 +142,6 @@ public class MCLink
                             sender.sendMessage(new TextComponentString("ERROR reloading config. See log for more info.").setStyle(new Style().setColor(TextFormatting.RED)));
                             throw new CommandException(e.getMessage());
                         }
-                        sender.sendMessage(new TextComponentString("Reloaded.").setStyle(new Style().setColor(TextFormatting.GREEN)));
                         //fallthrough
                     case "status":
                         sender.sendMessage(new TextComponentString("The server is currently " + (closed ? "CLOSED" : "OPENED")));
@@ -164,7 +165,7 @@ public class MCLink
                 MCLink.this.closed = closed;
                 forgeConfig.get(CATEGORY_GENERAL, "closed", false).set(closed);
                 forgeConfig.save();
-                logger.info("The server is now {}!", closed ? "CLOSED" : "OPENED");
+                logger.info("The server is now {0}!", closed ? "CLOSED" : "OPENED");
                 sender.sendMessage(new TextComponentString("The server is currently " + (closed ? "CLOSED" : "OPENED")));
             }
         });
@@ -181,33 +182,33 @@ public class MCLink
 
         if (event.isLocal())
         {
-            logger.info("Player {} [{}] was authorized because SSP", name, uuid);
+            logger.info("Player {0} [{1}] was authorized because SSP", name, uuid);
             UUID_STATUS_MAP.put(uuid, Marker.ALLOWED);
         }
         else if (pl.getOppedPlayers().getEntry(gp) != null)
         {
-            logger.info("Player {} [{}] was authorized because they are on the OP list.", name, uuid);
+            logger.info("Player {0} [{1}] was authorized because they are on the OP list.", name, uuid);
             UUID_STATUS_MAP.put(uuid, Marker.ALLOWED);
         }
         else if (pl.getWhitelistedPlayers().getEntry(gp) != null)
         {
-            logger.info("Player {} [{}] was authorized because they are on the whitelist.", name, uuid);
+            logger.info("Player {0} [{1}] was authorized because they are on the whitelist.", name, uuid);
             UUID_STATUS_MAP.put(uuid, Marker.ALLOWED);
         }
         else if (closed)
         {
-            logger.info("Player {} [{}] denied access because server is closed.", name, uuid);
+            logger.info("Player {0} [{1}] denied access because server is closed.", name, uuid);
             UUID_STATUS_MAP.put(uuid, Marker.DENIED_CLOSED);
         }
         else if (CACHE.getIfPresent(uuid) != null)
         {
-            logger.info("Player {} [{}] was authorized cached auth entries.", name, uuid);
+            logger.info("Player {0} [{1}] was authorized cached auth entries.", name, uuid);
             UUID_STATUS_MAP.put(uuid, Marker.ALLOWED);
         }
         else
         {
             UUID_STATUS_MAP.put(uuid, Marker.IN_PROGRESS);
-            logger.info("Player {} [{}] authorization is being checked...", name, uuid);
+            logger.info("Player {0} [{1}] authorization is being checked...", name, uuid);
             new Thread(new Runnable()
                 {
                     @Override
@@ -256,7 +257,7 @@ public class MCLink
             ImmutableCollection<Authentication> auth = map.get(uuid);
             if (auth.isEmpty())
             {
-                logger.info("Player {} [{}] was denied.", name, uuid);
+                logger.info("Player {0} [{1}] was denied.", name, uuid);
                 if (UUID_STATUS_MAP.put(uuid, Marker.DENIED_NO_AUTH) == null) // was already removed by login
                 {
                     kickAsync(uuid, kickMessage);
@@ -271,7 +272,7 @@ public class MCLink
                     GameProfile p = server().getPlayerProfileCache().getProfileByUUID(a.token);
                     auths.add(a.name + " from " + (p == null ? "?" : p.getName()) + " [" + a.token + "] with " + a.extra);
                 }
-                logger.info("Player {} [{}] was authorized by: {}", name, uuid, auths);
+                logger.info("Player {0} [{1}] was authorized by: {2}", name, uuid, auths);
                 if (UUID_STATUS_MAP.put(uuid, Marker.ALLOWED) == null) // was already removed by login
                 {
                     UUID_STATUS_MAP.remove(uuid); // login event already passed, so we don't need this anymore.
@@ -280,7 +281,7 @@ public class MCLink
         }
         catch (Exception e)
         {
-            logger.info("Player {} [{}] was denied due to an exception.", name, uuid);
+            logger.info("Player {0} [{1}] was denied due to an exception.", name, uuid);
             logger.catching(e);
             if (UUID_STATUS_MAP.put(uuid, Marker.DENIED_ERROR) == null) // was already removed by login
             {
@@ -345,9 +346,9 @@ public class MCLink
                 }
                 if (split.isEmpty()) continue; // ignore empty lines
                 String token = split.remove(0);
-                if (tokenConfig.contains(token, e.getKey())) die("Your MCLink config contains duplicate API tokens per service. This is not allowed. {} {}", e.getKey(), token);
-                if (split.size() < s.requiredArgs.size()) die("Your MCLink config for {} {} does not contain enough arguments. See the comment for the required arguments.", e.getKey(), token);
-                if (split.size() > s.requiredArgs.size() + s.optionalArgs.size()) die("Your MCLink config for {} {} contains too many arguments. See the comment for the allowed arguments.", e.getKey(), token);
+                if (tokenConfig.contains(token, e.getKey())) die("Your MCLink config contains duplicate API tokens per service. This is not allowed. {0} {1}", e.getKey(), token);
+                if (split.size() < s.requiredArgs.size()) die("Your MCLink config for {0} {1} does not contain enough arguments. See the comment for the required arguments.", e.getKey(), token);
+                if (split.size() > s.requiredArgs.size() + s.optionalArgs.size()) die("Your MCLink config for {0} {1} contains too many arguments. See the comment for the allowed arguments.", e.getKey(), token);
 
                 tokenConfig.put(token, e.getKey(), ImmutableList.copyOf(split));
             }
@@ -367,12 +368,12 @@ public class MCLink
         // We can't count on hasChanged, because we change the comments, which is not tracked.
         forgeConfig.save();
 
-        if (tokenConfig.isEmpty()) die("Your MCLink config is empty, this will result in no-one being allowed on the server!");
+        if (tokenConfig.isEmpty()) warn("Your MCLink config is empty, this will result in no-one being allowed on the server!");
         Sets.SetView<String> diff = Sets.difference(tokenConfig.columnKeySet(), services.keySet());
-        if (!diff.isEmpty()) die("Your tokenConfig for MCLink contains some services that are not available: {}", diff);
+        if (!diff.isEmpty()) warn("Your tokenConfig for MCLink contains some services that are not available: {0}", diff);
         ImmutableMap<String, UUID> tokenUUIDMap = API.getUUIDsFromTokens(tokenConfig.rowKeySet());
         diff = Sets.difference(tokenConfig.rowKeySet(), tokenUUIDMap.keySet());
-        if (!diff.isEmpty()) die("Your tokenConfig for MCLink contains some API tokens that are invalid: {}", diff);
+        if (!diff.isEmpty()) warn("Your tokenConfig for MCLink contains some API tokens that are invalid: {0}", diff);
 
         this.status = status;
         this.services = services;
@@ -385,7 +386,7 @@ public class MCLink
         if (this.closed != closed)
         {
             this.closed = closed;
-            logger.info("The server is now {}!", closed ? "CLOSED" : "OPENED");
+            logger.info("The server is now {0}!", closed ? "CLOSED" : "OPENED");
         }
         API.setTimeout(timeout);
 
@@ -398,15 +399,13 @@ public class MCLink
 
     private void die(String message, Object... objects)
     {
-        logger.fatal("");
-        logger.fatal("");
-        logger.fatal("");
-        logger.fatal("-=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=-");
-        logger.fatal(message, objects);
-        logger.fatal("-=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=-");
-        logger.fatal("");
-        logger.fatal("");
-        logger.fatal("");
-        throw new RuntimeException("[MCLink] Fatal error. See log above for more info.");
+        throw new RuntimeException("[MCLink] Fatal error: " + MessageFormat.format(message, objects));
+    }
+
+    private void warn(String message, Object... objects)
+    {
+        logger.warn("-=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=-");
+        logger.warn(MessageFormat.format(message, objects));
+        logger.warn("-=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=--=##=-");
     }
 }
