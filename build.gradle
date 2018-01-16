@@ -2,6 +2,10 @@ import groovy.json.JsonBuilder
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 
+subprojects {
+    version = "0.0.0" // No more semver warnings...
+}
+
 ext.getChangeLog = { ->
     def outStream = new ByteArrayOutputStream()
     exec {
