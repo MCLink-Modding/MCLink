@@ -77,9 +77,11 @@ public class Service
         sb.append("Only put in values, not the names of the arguments.\n");
         sb.append("Required arguments:").append('\n');
         sb.append(" - TOKEN: Your api token.").append('\n');
-        for (Map.Entry<String, String> e : requiredArgs.entrySet()) sb.append(" - ").append(e.getKey()).append(": ").append(e.getValue()).append('\n');
+        for (Map.Entry<String, String> e : requiredArgs.entrySet())
+            sb.append(" - ").append(e.getKey()).append(": ").append(e.getValue()).append('\n');
         sb.append("Optional arguments:").append('\n');
-        for (Map.Entry<String, String> e : optionalArgs.entrySet()) sb.append(" - ").append(e.getKey()).append(": ").append(e.getValue()).append('\n');
+        for (Map.Entry<String, String> e : optionalArgs.entrySet())
+            sb.append(" - ").append(e.getKey()).append(": ").append(e.getValue()).append('\n');
         return sb.toString();
     }
 

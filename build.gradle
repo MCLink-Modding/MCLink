@@ -10,7 +10,7 @@ ext.getChangeLog = { ->
     def outStream = new ByteArrayOutputStream()
     exec {
         executable = 'git'
-        args = [ 'log', '-n', '1', "--format='%B'"]
+        args = ['log', '-n', '1', "--format='%B'"]
         standardOutput = outStream
     }
     return outStream.toString().replaceAll("^\\s*'\\s*|\\s*'\\s*\$", "").replaceAll("[\\r\\n]+", "\n")
@@ -38,7 +38,7 @@ allprojects {
 repositories {
     mavenCentral()
 }
-    
+
 dependencies {
     compile 'com.google.guava:guava:17.0'
     compile 'com.google.code.gson:gson:2.2.4'
@@ -74,8 +74,7 @@ subprojects {
         from rootProject.sourceSets.main.output
     }
 
-    if (project.hasProperty('minecraft'))
-    {
+    if (project.hasProperty('minecraft')) {
         sourceJar {
             //noinspection GroovyAssignabilityCheck
             duplicatesStrategy = 'exclude'
@@ -88,51 +87,48 @@ subprojects {
         }
 
         processResources
-        {
-            inputs.property "version", project.version
-            inputs.property "mcversion", project.minecraft.version
+                {
+                    inputs.property "version", project.version
+                    inputs.property "mcversion", project.minecraft.version
 
-            from(sourceSets.main.resources.srcDirs) {
-                include 'mcmod.info'
-                expand 'version':project.version, 'mcversion':project.minecraft.version
-            }
+                    from(sourceSets.main.resources.srcDirs) {
+                        include 'mcmod.info'
+                        expand 'version': project.version, 'mcversion': project.minecraft.version
+                    }
 
-            from(sourceSets.main.resources.srcDirs) {
-                exclude 'mcmod.info'
-            }
+                    from(sourceSets.main.resources.srcDirs) {
+                        exclude 'mcmod.info'
+                    }
 
-            doLast {
-                //noinspection GroovyAssignabilityCheck
-                def updateFile = new File(project.archivesBaseName.toLowerCase() + '.json')
-                def json
-                if (updateFile.exists()) {
-                    json = new JsonSlurper().parseText(updateFile.getText())
+                    doLast {
+                        //noinspection GroovyAssignabilityCheck
+                        def updateFile = new File(project.archivesBaseName.toLowerCase() + '.json')
+                        def json
+                        if (updateFile.exists()) {
+                            json = new JsonSlurper().parseText(updateFile.getText())
+                        } else {
+                            def builder = new JsonBuilder()
+                            json = builder(
+                                    homepage: "https://mclink.dries007.net",
+                                    promos: new HashMap<>()
+                            )
+                        }
+                        //noinspection GroovyAssignabilityCheck
+                        json['promos'][project.minecraft.version + '-latest'] = project.version
+                        //noinspection GroovyAssignabilityCheck
+                        json['promos'][project.minecraft.version + '-recommended'] = project.version
+                        if (!json.containsKey(project.minecraft.version)) json.put(project.minecraft.version, new HashMap<>())
+                        //noinspection GroovyAssignabilityCheck
+                        def version = json[project.minecraft.version]
+                        version.put(project.version, getChangeLog())
+                        updateFile.write JsonOutput.prettyPrint(JsonOutput.toJson(json))
+                    }
                 }
-                else {
-                    def builder = new JsonBuilder()
-                    json = builder(
-                        homepage: "https://mclink.dries007.net",
-                        promos: new HashMap<>()
-                    )
-                }
-                //noinspection GroovyAssignabilityCheck
-                json['promos'][project.minecraft.version + '-latest'] = project.version
-                //noinspection GroovyAssignabilityCheck
-                json['promos'][project.minecraft.version + '-recommended'] = project.version
-                if (!json.containsKey(project.minecraft.version)) json.put(project.minecraft.version, new HashMap<>())
-                //noinspection GroovyAssignabilityCheck
-                def version = json[project.minecraft.version]
-                version.put(project.version, getChangeLog())
-                updateFile.write JsonOutput.prettyPrint(JsonOutput.toJson(json))
-            }
-        }
 
         rootProject.setupDecompWorkspace.dependsOn setupDecompWorkspace
         rootProject.setupDevWorkspace.dependsOn setupDevWorkspace
         rootProject.setupCiWorkspace.dependsOn setupCiWorkspace
-    }
-    else
-    {
+    } else {
         //noinspection GroovyAssignabilityCheck
         project.tasks.withType(Jar) { jarTask ->
             jarTask.appendix = project.name

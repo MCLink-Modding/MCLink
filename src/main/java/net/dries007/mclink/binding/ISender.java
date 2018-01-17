@@ -11,8 +11,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public interface ISender
 {
-    @NotNull
-    String getName();
+    @NotNull String getName();
 
     void sendMessage(String message);
 

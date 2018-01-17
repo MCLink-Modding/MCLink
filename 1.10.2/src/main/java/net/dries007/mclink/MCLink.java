@@ -23,6 +23,7 @@ import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
@@ -48,6 +49,7 @@ public class MCLink extends MCLinkCommon
     {
         super.setModVersion(event.getModMetadata().version);
         super.setMcVersion(MinecraftForge.MC_VERSION);
+        super.setBranding(FMLCommonHandler.instance().getModName());
         super.setLogger(new Log4jLogger(event.getModLog()));
         super.setConfig(new ForgeConfig(event.getSuggestedConfigurationFile()));
         super.init();

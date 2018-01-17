@@ -23,11 +23,11 @@ import static net.dries007.mclink.api.Constants.TYPE_MAP_STRING_STRING;
 
 /**
  * All API interactions should be done via this class.
- *
+ * <p>
  * You should call {see setMetaData} before you call any API function.
- * @see #setMetaData(String, String)
  *
  * @author Dries007
+ * @see #setMetaData(String, String, String)
  */
 @SuppressWarnings("WeakerAccess")
 public final class API
@@ -37,20 +37,38 @@ public final class API
     public static final URL URL_UUID = getURL("uuid");
     public static final URL URL_INFO = getURL("info");
     public static final URL URL_AUTHENTICATE = getURL("authenticate");
+    private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().serializeNulls()
+            .registerTypeAdapter(Service.class, new Service.Gson())
+            .registerTypeAdapter(Status.class, new Status.Gson())
+            .registerTypeAdapter(Authentication.class, new Authentication.Gson())
+            .setPrettyPrinting()
+            .create();
+    private static String userAgent;
+    private static int timeout;
+
+    static
+    {
+        setMetaData(null, null, null);
+        timeout = 30000;
+    }
+
+    private API() { throw new AssertionError("No API instances for you!"); }
 
     /**
      * This functions should be called before any api requests are made.
      * If any parameter is unknown, it can be set to null.
      *
-     * @param mod The version of the mod/plugin
-     * @param mc The version of Minecraft
+     * @param branding The branding of the environment (Minecraft, Forge, Bukkit, ...)
+     * @param mod      The version of the mod/plugin
+     * @param mc       The version of Minecraft
      */
-    public static void setMetaData(@Nullable String mod, @Nullable String mc)
+    public static void setMetaData(@Nullable String branding, @Nullable String mod, @Nullable String mc)
     {
         StringBuilder sb = new StringBuilder(Constants.MODNAME);
         if (mod != null) sb.append('/').append(mod.replaceAll("[;()\n\r]", ""));
         sb.append(" (APIv").append(Constants.API_VERSION).append("; ");
         if (mc != null) sb.append("MCv").append(mc.replaceAll("[;()\n\r]", "")).append("; ");
+        if (branding != null) sb.append(branding.replaceAll("[;()\n\r]", "")).append("; ");
         String os = System.getProperty("os.name") + ' ' + System.getProperty("os.arch") + ' ' + System.getProperty("os.version");
         sb.append(os.replaceAll("[;()\n\r]", ""));
         userAgent = sb.append(')').toString();
@@ -59,6 +77,7 @@ public final class API
     /**
      * Set the timeouts for this API.
      * Make sure they are log enough because the backend needs to have time to make requests to all services you require.
+     *
      * @param timeout in seconds
      */
     public static void setTimeout(int timeout)
@@ -69,6 +88,7 @@ public final class API
 
     /**
      * Request the current server status.
+     *
      * @return Status
      */
     @NotNull
@@ -79,12 +99,13 @@ public final class API
 
     /**
      * Get a list of services currently fit for use.
+     *
      * @return Service[]
      */
     @NotNull
     public static ImmutableMap<String, Service> getServices() throws IOException, APIException
     {
-        return ImmutableMap.copyOf(GSON.<Map<String, Service>>fromJson(doGetRequest(URL_SERVICES), new TypeToken<Map<String, Service>>(){}.getType()));
+        return ImmutableMap.copyOf(GSON.<Map<String, Service>>fromJson(doGetRequest(URL_SERVICES), new TypeToken<Map<String, Service>>() {}.getType()));
     }
 
     /**
@@ -99,6 +120,7 @@ public final class API
     /**
      * Get a the UUIDs corresponding to one or more tokens
      * Not all requested tokens may be present. If not, the token was invalid.
+     *
      * @return Map{String, UUID}
      */
     @NotNull
@@ -132,15 +154,14 @@ public final class API
 
     /**
      * Get all information known about a series of uuids.
-     *
+     * <p>
      * Returns a table with:
-     *   The rows are the uuids requested (Not all requested uuids may be present)
-     *   The columns are the names of the services available. (Not all services may be available for all users)
-     *   The cell values are maps of key:value pairs, as listed in the info received from getServices.
-     *
-     * @see #getServices()
+     * The rows are the uuids requested (Not all requested uuids may be present)
+     * The columns are the names of the services available. (Not all services may be available for all users)
+     * The cell values are maps of key:value pairs, as listed in the info received from getServices.
      *
      * @return Table{UUID, String, Map{String, String}
+     * @see #getServices()
      */
     @NotNull
     public static ImmutableTable<UUID, String, ImmutableMap<String, String>> getInfo(@NotNull Iterable<UUID> uuids) throws IOException, APIException
@@ -179,9 +200,9 @@ public final class API
      * Get authorization info for a series of users.
      * If a user is not present in the output map, you must assume they are not authorized.
      * The tokenTable is organizes as follows:
-     *   The rows are API tokens
-     *   The columns are Service's names
-     *   The cell values are a list of Service parameters. If no parameters are to be used, use an empty list.
+     * The rows are API tokens
+     * The columns are Service's names
+     * The cell values are a list of Service parameters. If no parameters are to be used, use an empty list.
      */
     @NotNull
     public static ImmutableMultimap<UUID, Authentication> getAuthorization(@NotNull Table<String, String, List<String>> tokenTable, @NotNull Iterable<UUID> uuids) throws IOException, APIException
@@ -224,6 +245,8 @@ public final class API
         }
         return b.build();
     }
+
+    // -- PRIVATES --
 
     @NotNull
     public static JsonElement doGetRequest(@NotNull URL url) throws IOException, APIException
@@ -315,25 +338,6 @@ public final class API
         return parseConnectionOutput(con);
     }
 
-    // -- PRIVATES --
-
-    private static String userAgent;
-    private static int timeout;
-    private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().serializeNulls()
-            .registerTypeAdapter(Service.class, new Service.Gson())
-            .registerTypeAdapter(Status.class, new Status.Gson())
-            .registerTypeAdapter(Authentication.class, new Authentication.Gson())
-            .setPrettyPrinting()
-            .create();
-
-    static
-    {
-        setMetaData(null, null);
-        timeout = 30000;
-    }
-
-    private API() { throw new AssertionError("No API instances for you!"); }
-
     private static URL getURL(String endpoint)
     {
         try
@@ -353,7 +357,8 @@ public final class API
         StringBuilder query = new StringBuilder("?");
         Iterator<Entry<String, String>> i = params.entries().iterator();
         urlEncode(query, i.next());
-        while (i.hasNext()) {
+        while (i.hasNext())
+        {
             query.append('&');
             urlEncode(query, i.next());
         }

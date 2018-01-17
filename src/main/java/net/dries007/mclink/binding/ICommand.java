@@ -15,16 +15,13 @@ import java.util.List;
  */
 public interface ICommand
 {
-    @NotNull
-    String getName();
+    @NotNull String getName();
 
-    @NotNull
-    String getUsage(ISender sender);
+    @NotNull String getUsage(ISender sender);
 
     void run(@NotNull IMinecraft mc, @NotNull ISender sender, @NotNull String[] args) throws CommandException;
 
-    @NotNull
-    List<String> getTabOptions(@NotNull ISender sender, @NotNull String[] args);
+    @NotNull List<String> getTabOptions(@NotNull ISender sender, @NotNull String[] args);
 
     class CommandException extends Exception
     {

@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableMultimap;
 import net.dries007.mclink.api.*;
 import net.dries007.mclink.binding.*;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.text.MessageFormat;
@@ -38,6 +39,7 @@ public abstract class MCLinkCommon implements IMinecraft
     private Side side = Side.UNKNOWN;
 
     private Status latestStatus;
+    private String branding;
 
     protected abstract void kickAsync(IPlayer player, String msg);
 
@@ -45,7 +47,7 @@ public abstract class MCLinkCommon implements IMinecraft
 
     protected void init() throws IConfig.ConfigException, IOException, APIException
     {
-        API.setMetaData(getModVersion(), getMcVersion());
+        API.setMetaData(null, getModVersion(), getMcVersion());
         String warnings = config.reload();
         if (!Strings.isNullOrEmpty(warnings)) logger.warn(warnings);
     }
@@ -268,7 +270,7 @@ public abstract class MCLinkCommon implements IMinecraft
         }
     }
 
-    @NotNull
+    @Nullable
     @Override
     public final String getModVersion()
     {
@@ -280,7 +282,7 @@ public abstract class MCLinkCommon implements IMinecraft
         this.modVersion = modVersion;
     }
 
-    @NotNull
+    @Nullable
     public final String getMcVersion()
     {
         return mcVersion;
@@ -289,6 +291,18 @@ public abstract class MCLinkCommon implements IMinecraft
     protected void setMcVersion(String mcVersion)
     {
         this.mcVersion = mcVersion;
+    }
+
+    @Nullable
+    @Override
+    public String getBranding()
+    {
+        return branding;
+    }
+
+    protected void setBranding(String branding)
+    {
+        this.branding = branding;
     }
 
     @Override

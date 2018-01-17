@@ -20,7 +20,7 @@ public class Main
 {
     public static void main(String[] args) throws IOException, APIException
     {
-        API.setMetaData("0.0.0", null);
+        API.setMetaData(null, "0.0.0", null);
         System.out.println();
         System.out.println(API.getStatus());
         System.out.println();

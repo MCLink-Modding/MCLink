@@ -20,6 +20,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.management.PlayerList;
 import net.minecraft.util.text.*;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
@@ -45,6 +46,7 @@ public class MCLink extends MCLinkCommon
     {
         super.setModVersion(event.getModMetadata().version);
         super.setMcVersion(MinecraftForge.MC_VERSION);
+        super.setBranding(FMLCommonHandler.instance().getModName());
         super.setLogger(new Log4jLogger(event.getModLog()));
         super.setConfig(new ForgeConfig(event.getSuggestedConfigurationFile()));
         super.init();

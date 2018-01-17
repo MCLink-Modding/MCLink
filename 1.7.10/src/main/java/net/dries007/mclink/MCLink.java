@@ -6,6 +6,7 @@ package net.dries007.mclink;
 
 import com.google.common.base.Throwables;
 import com.mojang.authlib.GameProfile;
+import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
@@ -74,6 +75,7 @@ public class MCLink extends MCLinkCommon
     {
         super.setModVersion(event.getModMetadata().version);
         super.setMcVersion(MinecraftForge.MC_VERSION);
+        super.setBranding(FMLCommonHandler.instance().getModName());
         super.setLogger(new Log4jLogger(event.getModLog()));
         super.setConfig(new ForgeConfig(event.getSuggestedConfigurationFile()));
         super.init();

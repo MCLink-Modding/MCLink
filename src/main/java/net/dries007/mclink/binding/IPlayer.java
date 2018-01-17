@@ -13,9 +13,7 @@ import java.util.UUID;
  */
 public interface IPlayer extends ISender
 {
-    @NotNull
-    UUID getUuid();
+    @NotNull UUID getUuid();
 
-    @NotNull
-    String getName();
+    @NotNull String getName();
 }

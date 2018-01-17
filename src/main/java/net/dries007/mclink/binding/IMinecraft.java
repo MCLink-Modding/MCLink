@@ -5,6 +5,7 @@
 package net.dries007.mclink.binding;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The minecraft (server) representation.
@@ -14,11 +15,11 @@ import org.jetbrains.annotations.NotNull;
  */
 public interface IMinecraft extends ISender
 {
-    @NotNull
-    String getModVersion();
+    @Nullable String getModVersion();
 
-    @NotNull
-    String getMcVersion();
+    @Nullable String getMcVersion();
+
+    @Nullable String getBranding();
 
     ILogger getLogger();
 
