@@ -30,6 +30,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.management.ServerConfigurationManager;
 import net.minecraft.server.management.UserList;
 import net.minecraft.util.ChatComponentTranslation;
+import net.minecraft.util.ChatStyle;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraftforge.common.MinecraftForge;
 
@@ -43,6 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * @author Dries007
  */
+@SuppressWarnings("Duplicates")
 @Mod(modid = Constants.MODID, name = Constants.MODNAME, useMetadata = true, acceptableRemoteVersions = "*", dependencies = "before:*")
 public class MCLink extends MCLinkCommon
 {
@@ -154,20 +156,17 @@ public class MCLink extends MCLinkCommon
     @Override
     public void sendMessage(String message)
     {
-        MinecraftServer mc;
-        mc = MinecraftServer.getServer();
         ChatComponentTranslation m = new ChatComponentTranslation("chat.type.admin", Constants.MODNAME, message);
-        m.getChatStyle().setColor(EnumChatFormatting.GRAY);
-        m.getChatStyle().setItalic(true);
-        if (mc.func_152363_m())
+        m.setChatStyle(new ChatStyle().setColor(EnumChatFormatting.GRAY).setItalic(true));
+        if (server.func_152363_m())
         {
             //noinspection unchecked
-            for (EntityPlayer p : (List<EntityPlayer>) mc.getConfigurationManager().playerEntityList)
+            for (EntityPlayer p : (List<EntityPlayer>) server.getConfigurationManager().playerEntityList)
             {
-                if (mc.getConfigurationManager().func_152596_g(p.getGameProfile())) p.addChatComponentMessage(m);
+                if (server.getConfigurationManager().func_152596_g(p.getGameProfile())) p.addChatComponentMessage(m);
             }
         }
-        mc.addChatMessage(m);
+        server.addChatMessage(m);
     }
 
     @Override

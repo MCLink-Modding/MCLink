@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * @author Dries007
  */
+@SuppressWarnings("Duplicates")
 public class SenderWrapper implements ISender
 {
     private final ICommandSender sender;

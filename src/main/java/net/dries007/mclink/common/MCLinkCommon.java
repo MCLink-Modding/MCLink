@@ -39,7 +39,7 @@ public abstract class MCLinkCommon implements IMinecraft
 
     private Status latestStatus;
 
-    protected abstract void kickAsync(IPlayer IPlayer, String msg);
+    protected abstract void kickAsync(IPlayer player, String msg);
 
     protected abstract IPlayer resolveUUID(UUID uuid);
 
@@ -56,7 +56,7 @@ public abstract class MCLinkCommon implements IMinecraft
         UUID_STATUS_MAP.clear();
     }
 
-    protected void invalidateCache()
+    private void invalidateCache()
     {
         CACHE.invalidateAll();
         CACHE.cleanUp();
@@ -103,6 +103,7 @@ public abstract class MCLinkCommon implements IMinecraft
             try
             {
                 String msg = config.reload();
+                invalidateCache();
                 if (Strings.isNullOrEmpty(msg))
                 {
                     logger.info("Config reloaded by {0}. All OK.", sender.getName());

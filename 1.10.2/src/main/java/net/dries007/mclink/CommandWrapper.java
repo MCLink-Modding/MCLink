@@ -8,8 +8,11 @@ import net.dries007.mclink.binding.ICommand;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 /**
@@ -29,20 +32,20 @@ public class CommandWrapper extends CommandBase
 
     @Override
     @NotNull
-    public String getCommandName()
+    public String getName()
     {
         return cmd.getName();
     }
 
     @Override
     @NotNull
-    public String getCommandUsage(@NotNull ICommandSender sender)
+    public String getUsage(@NotNull ICommandSender sender)
     {
         return cmd.getUsage(new SenderWrapper(sender));
     }
 
     @Override
-    public void processCommand(@NotNull ICommandSender sender, @NotNull String[] args)
+    public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, @NotNull String[] args) throws CommandException
     {
         try
         {
@@ -56,9 +59,9 @@ public class CommandWrapper extends CommandBase
 
     @Override
     @NotNull
-    public List addTabCompletionOptions(@NotNull ICommandSender sender, String[] args)
+    public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args, @Nullable BlockPos pos)
     {
-        return getListOfStringsFromIterableMatchingLastWord(args, cmd.getTabOptions(new SenderWrapper(sender), args));
+        return getListOfStringsMatchingLastWord(args, cmd.getTabOptions(new SenderWrapper(sender), args));
     }
 
     @Override
