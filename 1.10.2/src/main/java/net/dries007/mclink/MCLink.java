@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2017 - 2018 Dries007. All rights reserved
+ */
+
 package net.dries007.mclink;
 
 import com.google.common.cache.Cache;
@@ -209,13 +213,13 @@ public class MCLink
             UUID_STATUS_MAP.put(uuid, Marker.IN_PROGRESS);
             logger.info("Player {0} [{1}] authorization is being checked...", name, uuid);
             new Thread(new Runnable()
+            {
+                @Override
+                public void run()
                 {
-                    @Override
-                    public void run()
-                    {
-                        check(name, uuid);
-                    }
-                }, "MCLink " + name).start();
+                    check(name, uuid);
+                }
+            }, "MCLink " + name).start();
         }
     }
 

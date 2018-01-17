@@ -1,7 +1,12 @@
+/*
+ * Copyright (c) 2017 - 2018 Dries007. All rights reserved
+ */
+
 package net.dries007.mclink.api;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.*;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Type;
 import java.util.Map;
@@ -15,11 +20,14 @@ import static net.dries007.mclink.api.Constants.TYPE_MAP_STRING_STRING;
  */
 public class Authentication
 {
+    @NotNull
     public final String name;
+    @NotNull
     public final UUID token;
+    @NotNull
     public final ImmutableMap<String, String> extra;
 
-    public Authentication(String name, UUID token, Map<String, String> extra)
+    Authentication(@NotNull String name, @NotNull UUID token, @NotNull Map<String, String> extra)
     {
         this.name = name;
         this.token = token;

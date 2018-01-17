@@ -1,7 +1,12 @@
+/*
+ * Copyright (c) 2017 - 2018 Dries007. All rights reserved
+ */
+
 package net.dries007.mclink.api;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.*;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Type;
 import java.util.Map;
@@ -15,13 +20,18 @@ import static net.dries007.mclink.api.Constants.TYPE_MAP_STRING_STRING;
 @SuppressWarnings("WeakerAccess")
 public class Service
 {
+    @NotNull
     public final String website;
+    @NotNull
     public final ImmutableMap<String, String> info;
+    @NotNull
     public final ImmutableMap<String, String> requiredArgs;
+    @NotNull
     public final ImmutableMap<String, String> optionalArgs;
+    @NotNull
     public final ImmutableMap<String, String> extra;
 
-    private Service(String website, Map<String, String> info, Map<String, String> ra, Map<String, String> oa, Map<String, String> extra)
+    private Service(@NotNull String website, @NotNull Map<String, String> info, @NotNull Map<String, String> ra, @NotNull Map<String, String> oa, @NotNull Map<String, String> extra)
     {
         this.website = website;
         this.info = ImmutableMap.copyOf(info);

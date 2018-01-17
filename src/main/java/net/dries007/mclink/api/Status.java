@@ -1,6 +1,11 @@
+/*
+ * Copyright (c) 2017 - 2018 Dries007. All rights reserved
+ */
+
 package net.dries007.mclink.api;
 
 import com.google.gson.*;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Type;
 import java.util.Objects;
@@ -12,11 +17,14 @@ import java.util.Objects;
 public class Status
 {
     public final int apiVersion;
+    @Nullable
     public final String message;
+    @Nullable
     public final String serverAddress;
+    @Nullable
     public final String serverVersion;
 
-    private Status(int apiVersion, String message, String serverAddress, String serverVersion)
+    private Status(int apiVersion, @Nullable String message, @Nullable String serverAddress, @Nullable String serverVersion)
     {
         this.apiVersion = apiVersion;
         this.message = message;

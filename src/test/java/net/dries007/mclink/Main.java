@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2017 - 2018 Dries007. All rights reserved
+ */
+
 package net.dries007.mclink;
 
 import com.google.common.collect.HashBasedTable;
@@ -29,7 +33,7 @@ public class Main
         System.out.println(API.getInfo(UUID.fromString("c93ca410-8003-40ef-81d7-ac88719e2038")));
         System.out.println();
         HashBasedTable<String, String, List<String>> tokenCfg = HashBasedTable.create();
-        tokenCfg.put("43U9KAKMYb4KN1Ptjwdjq0d74wqIgchY", "Twitch", ImmutableList.<String>of());
+        tokenCfg.put("43U9KAKMYb4KN1Ptjwdjq0d74wqIgchY", "Twitch", ImmutableList.of());
         System.out.println(API.getAuthorization(tokenCfg, UUID.fromString("c93ca410-8003-40ef-81d7-ac88719e2038")));
     }
 }

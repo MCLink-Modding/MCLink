@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2017 - 2018 Dries007. All rights reserved
+ */
+
 package net.dries007.mclink;
 
 import com.google.common.cache.Cache;

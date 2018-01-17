@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2017 - 2018 Dries007. All rights reserved
+ */
+
 package net.dries007.mclink;
 
 import com.google.common.cache.Cache;
@@ -34,7 +38,10 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -207,13 +214,13 @@ public class MCLink
             UUID_STATUS_MAP.put(uuid, Marker.IN_PROGRESS);
             logger.info("Player {0} [{1}] authorization is being checked...", name, uuid);
             new Thread(new Runnable()
+            {
+                @Override
+                public void run()
                 {
-                    @Override
-                    public void run()
-                    {
-                        check(name, uuid);
-                    }
-                }, "MCLink " + name).start();
+                    check(name, uuid);
+                }
+            }, "MCLink " + name).start();
         }
     }
 

@@ -1,12 +1,17 @@
+/*
+ * Copyright (c) 2017 - 2018 Dries007. All rights reserved
+ */
+
 package net.dries007.mclink.api;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.*;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.*;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
-import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -24,7 +29,7 @@ import static net.dries007.mclink.api.Constants.TYPE_MAP_STRING_STRING;
  *
  * @author Dries007
  */
-@SuppressWarnings({"WeakerAccess", "unused"})
+@SuppressWarnings("WeakerAccess")
 public final class API
 {
     public static final URL URL_STATUS = getURL("status");
@@ -40,7 +45,7 @@ public final class API
      * @param mod The version of the mod/plugin
      * @param mc The version of Minecraft
      */
-    public static void setMetaData(String mod, String mc)
+    public static void setMetaData(@Nullable String mod, @Nullable String mc)
     {
         StringBuilder sb = new StringBuilder(Constants.MODNAME);
         if (mod != null) sb.append('/').append(mod.replaceAll("[;()\n\r]", ""));
@@ -54,7 +59,7 @@ public final class API
     /**
      * Set the timeouts for this API.
      * Make sure they are log enough because the backend needs to have time to make requests to all services you require.
-     * @param timeout
+     * @param timeout in seconds
      */
     public static void setTimeout(int timeout)
     {
@@ -66,6 +71,7 @@ public final class API
      * Request the current server status.
      * @return Status
      */
+    @NotNull
     public static Status getStatus() throws IOException, APIException
     {
         return GSON.fromJson(doGetRequest(URL_STATUS), Status.class);
@@ -75,6 +81,7 @@ public final class API
      * Get a list of services currently fit for use.
      * @return Service[]
      */
+    @NotNull
     public static ImmutableMap<String, Service> getServices() throws IOException, APIException
     {
         return ImmutableMap.copyOf(GSON.<Map<String, Service>>fromJson(doGetRequest(URL_SERVICES), new TypeToken<Map<String, Service>>(){}.getType()));
@@ -83,7 +90,8 @@ public final class API
     /**
      * @see #getUUIDsFromTokens(Iterable)
      */
-    public static ImmutableMap<String, UUID> getUUIDsFromTokens(String... tokens) throws IOException, APIException
+    @NotNull
+    public static ImmutableMap<String, UUID> getUUIDsFromTokens(@NotNull String... tokens) throws IOException, APIException
     {
         return getUUIDsFromTokens(Arrays.asList(tokens));
     }
@@ -93,7 +101,8 @@ public final class API
      * Not all requested tokens may be present. If not, the token was invalid.
      * @return Map{String, UUID}
      */
-    public static ImmutableMap<String, UUID> getUUIDsFromTokens(Iterable<String> tokens) throws IOException, APIException
+    @NotNull
+    public static ImmutableMap<String, UUID> getUUIDsFromTokens(@NotNull Iterable<String> tokens) throws IOException, APIException
     {
         JsonArray in = new JsonArray();
         for (String token : tokens)
@@ -115,7 +124,8 @@ public final class API
     /**
      * @see #getInfo(Iterable)
      */
-    public static ImmutableTable<UUID, String, ImmutableMap<String, String>> getInfo(UUID... uuids) throws IOException, APIException
+    @NotNull
+    public static ImmutableTable<UUID, String, ImmutableMap<String, String>> getInfo(@NotNull UUID... uuids) throws IOException, APIException
     {
         return getInfo(Arrays.asList(uuids));
     }
@@ -132,7 +142,8 @@ public final class API
      *
      * @return Table{UUID, String, Map{String, String}
      */
-    public static ImmutableTable<UUID, String, ImmutableMap<String, String>> getInfo(Iterable<UUID> uuids) throws IOException, APIException
+    @NotNull
+    public static ImmutableTable<UUID, String, ImmutableMap<String, String>> getInfo(@NotNull Iterable<UUID> uuids) throws IOException, APIException
     {
         JsonArray in = new JsonArray();
         for (UUID token : uuids)
@@ -158,7 +169,8 @@ public final class API
     /**
      * @see #getAuthorization(Table, Iterable)
      */
-    public static ImmutableMultimap<UUID, Authentication> getAuthorization(Table<String, String, List<String>> tokenconfig, UUID... uuids) throws IOException, APIException
+    @NotNull
+    public static ImmutableMultimap<UUID, Authentication> getAuthorization(@NotNull Table<String, String, List<String>> tokenconfig, @NotNull UUID... uuids) throws IOException, APIException
     {
         return getAuthorization(tokenconfig, Arrays.asList(uuids));
     }
@@ -171,7 +183,8 @@ public final class API
      *   The columns are Service's names
      *   The cell values are a list of Service parameters. If no parameters are to be used, use an empty list.
      */
-    public static ImmutableMultimap<UUID, Authentication> getAuthorization(Table<String, String, List<String>> tokenTable, Iterable<UUID> uuids) throws IOException, APIException
+    @NotNull
+    public static ImmutableMultimap<UUID, Authentication> getAuthorization(@NotNull Table<String, String, List<String>> tokenTable, @NotNull Iterable<UUID> uuids) throws IOException, APIException
     {
         JsonObject root = new JsonObject();
 
@@ -212,12 +225,14 @@ public final class API
         return b.build();
     }
 
-    public static JsonElement doGetRequest(URL url) throws IOException, APIException
+    @NotNull
+    public static JsonElement doGetRequest(@NotNull URL url) throws IOException, APIException
     {
         return doGetRequest(url, null);
     }
 
-    public static JsonElement doGetRequest(URL url, Multimap<String, String> params) throws IOException, APIException
+    @NotNull
+    public static JsonElement doGetRequest(@NotNull URL url, @Nullable Multimap<String, String> params) throws IOException, APIException
     {
         String query = urlEncode(params);
         String location = url.toString();
@@ -240,7 +255,8 @@ public final class API
         return parseConnectionOutput(con);
     }
 
-    private static JsonElement parseConnectionOutput(HttpURLConnection con) throws IOException, APIException
+    @NotNull
+    private static JsonElement parseConnectionOutput(@NotNull HttpURLConnection con) throws IOException, APIException
     {
         try
         {
@@ -263,12 +279,14 @@ public final class API
         }
     }
 
-    public static JsonElement doPostRequest(URL url, JsonElement body) throws IOException, APIException
+    @NotNull
+    public static JsonElement doPostRequest(@NotNull URL url, @NotNull JsonElement body) throws IOException, APIException
     {
         return doPostRequest(url, body, null);
     }
 
-    public static JsonElement doPostRequest(URL url, JsonElement body, Multimap<String, String> params) throws IOException, APIException
+    @NotNull
+    public static JsonElement doPostRequest(@NotNull URL url, @NotNull JsonElement body, @Nullable Multimap<String, String> params) throws IOException, APIException
     {
         String data = body.toString();
         String query = urlEncode(params);
@@ -328,35 +346,26 @@ public final class API
         }
     }
 
-    private static String urlEncode(Multimap<String, String> params) throws UnsupportedEncodingException
+    @NotNull
+    private static String urlEncode(@Nullable Multimap<String, @Nullable String> params) throws UnsupportedEncodingException
     {
         if (params == null || params.isEmpty()) return "";
         StringBuilder query = new StringBuilder("?");
         Iterator<Entry<String, String>> i = params.entries().iterator();
         urlEncode(query, i.next());
         while (i.hasNext()) {
-             query.append('&');
-             urlEncode(query, i.next());
+            query.append('&');
+            urlEncode(query, i.next());
         }
         return query.toString();
     }
 
-    private static void urlEncode(StringBuilder query, Entry<String, String> e) throws UnsupportedEncodingException
+    private static void urlEncode(@NotNull StringBuilder query, @NotNull Entry<String, @Nullable String> e) throws UnsupportedEncodingException
     {
         query.append(URLEncoder.encode(e.getKey(), Constants.UTF8.name()));
         if (!Strings.isNullOrEmpty(e.getValue()))
         {
             query.append('=').append(URLEncoder.encode(e.getValue(), Constants.UTF8.name()));
         }
-    }
-
-    private static Map<String, String> parseExtra(Set<Entry<String, JsonElement>> entries)
-    {
-        HashMap<String, String> out = new HashMap<>();
-        for (Entry<String, JsonElement> entry : entries)
-        {
-            out.put(entry.getKey(), GSON.fromJson(entry.getValue(), String.class));
-        }
-        return out;
     }
 }

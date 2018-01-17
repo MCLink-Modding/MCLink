@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2017 - 2018 Dries007. All rights reserved
+ */
+
 package net.dries007.mclink.api;
 
 /**
@@ -5,7 +9,6 @@ package net.dries007.mclink.api;
  *
  * @author Dries007
  */
-@SuppressWarnings("WeakerAccess")
 public class APIException extends Exception
 {
     public final int status;
