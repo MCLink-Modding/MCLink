@@ -65,6 +65,23 @@ public class Player implements IPlayer
     {
         if (sender != null) sender.sendMessage(message, formatCode);
     }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Player player = (Player) o;
+
+        return uuid.equals(player.uuid);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return uuid.hashCode();
+    }
 }
 
 

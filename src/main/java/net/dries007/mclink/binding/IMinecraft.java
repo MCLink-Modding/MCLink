@@ -7,6 +7,8 @@ package net.dries007.mclink.binding;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.Consumer;
+
 /**
  * The minecraft (server) representation.
  * Any message send to this should be broadcast to all ops (or equivalent)
@@ -31,7 +33,7 @@ public interface IMinecraft extends ISender
 
     void reloadConfigAsync(@NotNull ISender sender);
 
-    void checkAuthStatusAsync(@NotNull IPlayer player, boolean oped, boolean whitelisted);
+    void checkAuthStatusAsync(@NotNull IPlayer player, boolean oped, boolean whitelisted, Consumer<Runnable> runner);
 
-    void reloadAPIStatusAsync(@NotNull ISender sender);
+    void reloadAPIStatusAsync(@NotNull ISender sender, Consumer<Runnable> runner);
 }

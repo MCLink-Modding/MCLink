@@ -28,8 +28,8 @@ import java.util.function.Consumer;
  */
 public abstract class MCLinkCommon implements IMinecraft
 {
-    private final Cache<IPlayer, ImmutableCollection<Authentication>> CACHE = CacheBuilder.newBuilder().expireAfterWrite(24, TimeUnit.HOURS).build();
-    private final ConcurrentHashMap<IPlayer, Marker> UUID_STATUS_MAP = new ConcurrentHashMap<>();
+    private final Cache<UUID, ImmutableCollection<Authentication>> CACHE = CacheBuilder.newBuilder().expireAfterWrite(24, TimeUnit.HOURS).build();
+    private final ConcurrentHashMap<UUID, Marker> UUID_STATUS_MAP = new ConcurrentHashMap<>();
 
     private ILogger logger = null;
     private IConfig config = null;
@@ -43,16 +43,17 @@ public abstract class MCLinkCommon implements IMinecraft
 
     protected abstract void kickAsync(IPlayer player, String msg);
 
-    protected abstract IPlayer resolveUUID(UUID uuid);
+    @Nullable
+    protected abstract String nameFromUUID(UUID uuid);
 
-    protected void init() throws IConfig.ConfigException, IOException, APIException
+    public void init() throws IConfig.ConfigException, IOException, APIException
     {
-        API.setMetaData(null, getModVersion(), getMcVersion());
+        API.setMetaData(getBranding(), getModVersion(), getMcVersion());
         String warnings = config.reload();
         if (!Strings.isNullOrEmpty(warnings)) logger.warn(warnings);
     }
 
-    protected void deInit()
+    public void deInit()
     {
         invalidateCache();
         UUID_STATUS_MAP.clear();
@@ -64,16 +65,16 @@ public abstract class MCLinkCommon implements IMinecraft
         CACHE.cleanUp();
     }
 
-    protected void registerCommands(Consumer<ICommand> register)
+    public void registerCommands(Consumer<ICommand> register)
     {
         register.accept(new MCLinkCommand());
     }
 
-    protected void login(IPlayer player, boolean sendStatus)
+    public void login(IPlayer player, boolean sendStatus)
     {
         // If the map has it set to DENIED already, the lookup finished before we got here and we can kick the player.
         // If the marker was something else, we remove the marker to the async thread knows it needs to kick the player itself.
-        switch (UUID_STATUS_MAP.remove(player))
+        switch (UUID_STATUS_MAP.remove(player.getUuid()))
         {
             case ALLOWED:
                 break;
@@ -147,9 +148,9 @@ public abstract class MCLinkCommon implements IMinecraft
     }
 
     @Override
-    public void reloadAPIStatusAsync(@NotNull ISender sender)
+    public void reloadAPIStatusAsync(@NotNull ISender sender, Consumer<Runnable> runner)
     {
-        new Thread(() -> {
+        runner.accept(() -> {
             try
             {
                 latestStatus = API.getStatus();
@@ -186,86 +187,86 @@ public abstract class MCLinkCommon implements IMinecraft
                     sender.sendMessage(MessageFormat.format("{0}: {1}", e.getClass().getSimpleName(), e.getMessage()), FormatCode.RED);
                 while ((e = e.getCause()) != null);
             }
-        }, Constants.MODNAME + "-reloadAPIStatusAsync").start();
+        });
     }
 
     @Override
-    public void checkAuthStatusAsync(@NotNull IPlayer IPlayer, boolean oped, boolean whitelisted)
+    public void checkAuthStatusAsync(@NotNull IPlayer player, boolean oped, boolean whitelisted, Consumer<Runnable> runner)
     {
         if (oped) // not cached, bypassed server closed latestStatus
         {
-            logger.info("IPlayer {0} was authorized because they are on the OP list.", IPlayer);
-            UUID_STATUS_MAP.put(IPlayer, Marker.ALLOWED);
+            logger.info("Player {0} was authorized because they are on the OP list.", player);
+            UUID_STATUS_MAP.put(player.getUuid(), Marker.ALLOWED);
             return;
         }
 
         if (config.isClosed())
         {
-            logger.info("IPlayer {0} denied access because server is closed.", IPlayer);
-            UUID_STATUS_MAP.put(IPlayer, Marker.DENIED_CLOSED);
+            logger.info("Player {0} denied access because server is closed.", player);
+            UUID_STATUS_MAP.put(player.getUuid(), Marker.DENIED_CLOSED);
             return;
         }
 
         if (whitelisted) // not cached
         {
-            logger.info("IPlayer {0} was authorized because they are on the whitelist.", IPlayer);
-            UUID_STATUS_MAP.put(IPlayer, Marker.ALLOWED);
+            logger.info("Player {0} was authorized because they are on the whitelist.", player);
+            UUID_STATUS_MAP.put(player.getUuid(), Marker.ALLOWED);
             return;
         }
 
-        if (CACHE.getIfPresent(IPlayer) != null)
+        if (CACHE.getIfPresent(player) != null)
         {
-            logger.info("IPlayer {0} was authorized cached auth entries.", IPlayer);
-            UUID_STATUS_MAP.put(IPlayer, Marker.ALLOWED);
+            logger.info("Player {0} was authorized cached auth entries.", player);
+            UUID_STATUS_MAP.put(player.getUuid(), Marker.ALLOWED);
             return;
         }
 
-        UUID_STATUS_MAP.put(IPlayer, Marker.IN_PROGRESS);
-        logger.info("IPlayer {0} [{1}] authorization is being checked...", IPlayer);
+        UUID_STATUS_MAP.put(player.getUuid(), Marker.IN_PROGRESS);
+        logger.info("Player {0} [{1}] authorization is being checked...", player);
 
-        new Thread(() -> check(IPlayer), "MCLink" + IPlayer).start();
+        runner.accept(() -> check(player));
     }
 
-    private void check(IPlayer IPlayer)
+    private void check(IPlayer player)
     {
         try
         {
-            ImmutableMultimap<UUID, Authentication> map = API.getAuthorization(config.getTokenConfig(), IPlayer.getUuid());
-            ImmutableCollection<Authentication> auth = map.get(IPlayer.getUuid());
+            ImmutableMultimap<UUID, Authentication> map = API.getAuthorization(config.getTokenConfig(), player.getUuid());
+            ImmutableCollection<Authentication> auth = map.get(player.getUuid());
             if (auth.isEmpty())
             {
-                logger.info("IPlayer {0} authorization was denied by MCLink.", IPlayer);
-                if (UUID_STATUS_MAP.put(IPlayer, Marker.DENIED_NO_AUTH) == null) // was already removed by login
+                logger.info("Player {0} authorization was denied by MCLink.", player);
+                if (UUID_STATUS_MAP.put(player.getUuid(), Marker.DENIED_NO_AUTH) == null) // was already removed by login
                 {
-                    UUID_STATUS_MAP.remove(IPlayer); // login event already past, so we don't need this anymore.
-                    kickAsync(IPlayer, config.getKickMessage());
+                    UUID_STATUS_MAP.remove(player.getUuid()); // login event already past, so we don't need this anymore.
+                    kickAsync(player, config.getKickMessage());
                 }
             }
             else
             {
-                CACHE.put(IPlayer, auth);
+                CACHE.put(player.getUuid(), auth);
                 List<String> auths = new ArrayList<>();
                 for (Authentication a : auth)
                 {
-                    IPlayer p = resolveUUID(a.token);
-                    auths.add(a.name + " from " + (p == null ? a.token : p) + " with " + a.extra);
+                    String name = nameFromUUID(a.token);
+                    auths.add(a.name + " from " + (name == null ? a.token : name + "[" + a.token + "]") + " with " + a.extra);
                 }
-                logger.info("IPlayer {0} was authorized by: {1}", IPlayer, auths);
-                if (UUID_STATUS_MAP.put(IPlayer, Marker.ALLOWED) == null) // was already removed by login
+                logger.info("Player {0} was authorized by: {1}", player, auths);
+                if (UUID_STATUS_MAP.put(player.getUuid(), Marker.ALLOWED) == null) // was already removed by login
                 {
-                    UUID_STATUS_MAP.remove(IPlayer); // login event already passed, so we don't need this anymore.
+                    UUID_STATUS_MAP.remove(player.getUuid()); // login event already passed, so we don't need this anymore.
                 }
             }
         }
         catch (Exception e)
         {
-            logger.info("IPlayer {0} was denied due to an exception.", IPlayer);
+            logger.info("Player {0} was denied due to an exception.", player);
             logger.catching(e);
 
-            if (UUID_STATUS_MAP.put(IPlayer, Marker.DENIED_ERROR) == null) // was already removed by login
+            if (UUID_STATUS_MAP.put(player.getUuid(), Marker.DENIED_ERROR) == null) // was already removed by login
             {
-                UUID_STATUS_MAP.remove(IPlayer); // login event already past, so we don't need this anymore.
-                kickAsync(IPlayer, config.getErrorMessage());
+                UUID_STATUS_MAP.remove(player.getUuid()); // login event already past, so we don't need this anymore.
+                kickAsync(player, config.getErrorMessage());
             }
         }
     }
@@ -277,7 +278,7 @@ public abstract class MCLinkCommon implements IMinecraft
         return modVersion;
     }
 
-    protected void setModVersion(String modVersion)
+    public void setModVersion(String modVersion)
     {
         this.modVersion = modVersion;
     }
@@ -288,7 +289,7 @@ public abstract class MCLinkCommon implements IMinecraft
         return mcVersion;
     }
 
-    protected void setMcVersion(String mcVersion)
+    public void setMcVersion(String mcVersion)
     {
         this.mcVersion = mcVersion;
     }
@@ -300,7 +301,7 @@ public abstract class MCLinkCommon implements IMinecraft
         return branding;
     }
 
-    protected void setBranding(String branding)
+    public void setBranding(String branding)
     {
         this.branding = branding;
     }
@@ -311,7 +312,7 @@ public abstract class MCLinkCommon implements IMinecraft
         return logger;
     }
 
-    protected void setLogger(ILogger logger)
+    public void setLogger(ILogger logger)
     {
         this.logger = logger;
     }
@@ -322,7 +323,7 @@ public abstract class MCLinkCommon implements IMinecraft
         return config;
     }
 
-    protected void setConfig(IConfig config)
+    public void setConfig(IConfig config)
     {
         this.config = config;
     }
@@ -332,7 +333,7 @@ public abstract class MCLinkCommon implements IMinecraft
         return side;
     }
 
-    protected void setSide(Side side)
+    public void setSide(Side side)
     {
         this.side = side;
     }

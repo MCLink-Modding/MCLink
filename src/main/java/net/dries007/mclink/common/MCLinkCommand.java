@@ -55,11 +55,11 @@ public class MCLinkCommand implements ICommand
                 if (!mc.open()) sender.sendMessage("Server already open.", FormatCode.YELLOW);
                 break;
             case "reloadConfigAsync":
-                mc.reloadAPIStatusAsync(sender);
+                mc.reloadAPIStatusAsync(sender, new ThreadStartConsumer("reloadAPIStatusAsync"));
                 mc.reloadConfigAsync(sender);
                 break;
             case "status":
-                mc.reloadAPIStatusAsync(sender);
+                mc.reloadAPIStatusAsync(sender, new ThreadStartConsumer("reloadAPIStatusAsync"));
                 sender.sendMessage("The server is currently " + (mc.getConfig().isClosed() ? "CLOSED" : "OPENED"));
                 break;
             default:

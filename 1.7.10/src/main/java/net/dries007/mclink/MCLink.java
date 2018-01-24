@@ -24,6 +24,7 @@ import net.dries007.mclink.binding.IPlayer;
 import net.dries007.mclink.common.Log4jLogger;
 import net.dries007.mclink.common.MCLinkCommon;
 import net.dries007.mclink.common.Player;
+import net.dries007.mclink.common.ThreadStartConsumer;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.NetHandlerPlayServer;
@@ -34,6 +35,7 @@ import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.ChatStyle;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraftforge.common.MinecraftForge;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -114,10 +116,10 @@ public class MCLink extends MCLinkCommon
     public void connectEvent(FMLNetworkEvent.ServerConnectionFromClientEvent event)
     {
         if (event.isLocal) return;
-        EntityPlayerMP p = ((NetHandlerPlayServer) event.handler).playerEntity;
-        GameProfile gp = p.getGameProfile();
+        EntityPlayerMP pl = ((NetHandlerPlayServer) event.handler).playerEntity;
+        GameProfile gp = pl.getGameProfile();
         ServerConfigurationManager scm = server.getConfigurationManager();
-        super.checkAuthStatusAsync(getPlayerFromEntity(p), userListContains(scm.func_152603_m(), gp), userListContains(scm.func_152599_k(), gp));
+        super.checkAuthStatusAsync(getPlayerFromEntity(pl), userListContains(scm.func_152603_m(), gp), userListContains(scm.func_152599_k(), gp), new ThreadStartConsumer("checker-" + gp.getId()));
     }
 
     @SubscribeEvent
@@ -146,13 +148,14 @@ public class MCLink extends MCLinkCommon
         TO_KICK.put(player.getName(), msg);
     }
 
+    @Nullable
     @Override
-    protected IPlayer resolveUUID(UUID uuid)
+    protected String nameFromUUID(UUID uuid)
     {
         GameProfile gp = server.func_152358_ax().func_152652_a(uuid);
         //noinspection ConstantConditions
         if (gp == null) return null;
-        return new Player(null, gp.getName(), gp.getId());
+        return gp.getName();
     }
 
     @Override

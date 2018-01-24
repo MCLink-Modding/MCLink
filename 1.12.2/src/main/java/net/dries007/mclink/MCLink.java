@@ -13,6 +13,7 @@ import net.dries007.mclink.binding.IPlayer;
 import net.dries007.mclink.common.Log4jLogger;
 import net.dries007.mclink.common.MCLinkCommon;
 import net.dries007.mclink.common.Player;
+import net.dries007.mclink.common.ThreadStartConsumer;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.NetHandlerPlayServer;
@@ -28,6 +29,7 @@ import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent.PlayerLoggedInEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -82,7 +84,7 @@ public class MCLink extends MCLinkCommon
         PlayerList pl = server.getPlayerList();
         boolean op = pl.getOppedPlayers().bypassesPlayerLimit(gp) || pl.getOppedPlayers().getPermissionLevel(gp) > 0;
         boolean wl = pl.getWhitelistedPlayers().isWhitelisted(gp);
-        super.checkAuthStatusAsync(getPlayerFromEntity(p), op, wl);
+        super.checkAuthStatusAsync(getPlayerFromEntity(p), op, wl, new ThreadStartConsumer("checker-" + gp.getId()));
     }
 
     @SubscribeEvent
@@ -102,13 +104,14 @@ public class MCLink extends MCLinkCommon
         });
     }
 
+    @Nullable
     @Override
-    protected IPlayer resolveUUID(UUID uuid)
+    protected String nameFromUUID(UUID uuid)
     {
         GameProfile gp = server.getPlayerProfileCache().getProfileByUUID(uuid);
         //noinspection ConstantConditions
         if (gp == null) return null;
-        return new Player(null, gp.getName(), gp.getId());
+        return gp.getName();
     }
 
     @Override
