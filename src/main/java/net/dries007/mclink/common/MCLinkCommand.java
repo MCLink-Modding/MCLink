@@ -41,7 +41,7 @@ public class MCLinkCommand implements ICommand
             sender.sendMessage("Subcommands:", FormatCode.AQUA);
             sender.sendMessage("- close: Do not let anyone join via MCLink. Ops and manually whitelisted players can still join.");
             sender.sendMessage("- open: Let people join via MCLink again.");
-            sender.sendMessage("- reloadConfigAsync: Reload all configs & API status. May take a few moments.");
+            sender.sendMessage("- reload: Reload all configs & API status. May take a few moments.");
             sender.sendMessage("- status: Get current open/closed status & any API messages.");
             return;
         }
@@ -54,7 +54,7 @@ public class MCLinkCommand implements ICommand
             case "open":
                 if (!mc.open()) sender.sendMessage("Server already open.", FormatCode.YELLOW);
                 break;
-            case "reloadConfigAsync":
+            case "reload":
                 mc.reloadAPIStatusAsync(sender, new ThreadStartConsumer("reloadAPIStatusAsync"));
                 mc.reloadConfigAsync(sender);
                 break;

@@ -118,6 +118,13 @@ public abstract class CommonConfig implements IConfig
         ImmutableMap<String, Service> services = API.getServices();
         Table<String, String, List<String>> tokenConfig = HashBasedTable.create();
 
+        String kickMessage = getString("kickMessage", "This is an MCLink protected server. Link your accounts via " + Constants.BASE_URL + " and make sure you are subscribed to the right people.", "The message used to kickAsync players. Make sure to include instructions on how to get on!");
+        String errorMessage = getString("errorMessage", "MCLink could not verify your status. Please contact a server admin.", "The message people get when an error happens while MCLink checks their ID.");
+        String closedMessage = getString("closedMessage", "The server is currently closed for the public.", "The message people get when the server is closed.");
+        boolean showStatus = getBoolean("showStatus", true, "Show important status messages to level 2+ OP players when they log in.");
+        boolean closed = getBoolean("closed", false, "Use the ingame command /mclink to update this. Keeps track of if the server is closed.");
+        int timeout = getInt("timeout", 30, 0, 300, "Timeout for the API requests in seconds. Keep this high enough to avoid players being kicked while actually being authorized. 0 = infinite timeout") * 1000;
+
         setGlobalCommentServices("All service options are put here.\n" +
                 "Blank ones will be added if new services are added, old ones are not removed.\n" +
                 "Check the MCLink website for a config file example.");
@@ -149,13 +156,6 @@ public abstract class CommonConfig implements IConfig
         {
             addService(newService, services.get(newService).getConfigCommentString());
         }
-
-        String kickMessage = getString("kickMessage", "This is an MCLink protected server. Link your accounts via " + Constants.BASE_URL + " and make sure you are subscribed to the right people.", "The message used to kickAsync players. Make sure to include instructions on how to get on!");
-        String errorMessage = getString("errorMessage", "MCLink could not verify your status. Please contact a server admin.", "The message people get when an error happens while MCLink checks their ID.");
-        String closedMessage = getString("closedMessage", "The server is currently closed for the public.", "The message people get when the server is closed.");
-        boolean showStatus = getBoolean("showStatus", true, "Show important status messages to level 2+ OP players when they log in.");
-        boolean closed = getBoolean("closed", false, "Use the ingame command /mclink to update this.\nKeeps track of if the server is closed.");
-        int timeout = getInt("timeout", 30, 0, 300, "Timeout for the API requests in seconds. Keep this high enough to avoid players being kicked while actually being authorized. 0 = infinite timeout") * 1000;
 
         if (tokenConfig.isEmpty())
             warnings += "Your MCLink config is empty, this will result in no-one being allowed on the server!\n";

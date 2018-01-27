@@ -6,3 +6,7 @@ load: STARTUP
 authors: [Dries007]
 description: Automatic whitelist management
 website: https://mclink.dries007.net
+commands:
+  mclink:
+    description: Manage the MCLink plugin.
+    permission: op

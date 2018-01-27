@@ -34,6 +34,9 @@ public interface IConfig
 
     boolean isClosed();
 
+    /**
+     * @return true IF changed ELSE false
+     */
     boolean setClosed(boolean closed);
 
     boolean isShowStatus();

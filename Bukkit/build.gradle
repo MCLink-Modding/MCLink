@@ -1,0 +1,46 @@
+plugins {
+    id "com.matthewprenger.cursegradle" version "1.0.9"
+}
+apply plugin: 'java'
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'spigotmc-repo'
+        url = 'https://hub.spigotmc.org/nexus/content/groups/public/'
+    }
+    maven {
+        name = 'sonatype'
+        url = 'https://oss.sonatype.org/content/groups/public/'
+    }
+}
+
+dependencies {
+    compile 'org.bukkit:bukkit:1.8-R0.1-SNAPSHOT'
+}
+
+import org.apache.tools.ant.filters.ReplaceTokens
+
+processResources {
+    from(sourceSets.main.resources.srcDirs) {
+        filter ReplaceTokens, tokens: [version: version]
+    }
+}
+
+curseforge {
+    apiKey = project.hasProperty('curseforge.apiKey.dries007') ? project['curseforge.apiKey.dries007'] : 'KAPUT'
+    project {
+        id = '286138'
+        releaseType = 'beta'
+        changelog = rootProject.getChangeLog() + '\n[Automatic build]'
+        addGameVersion '1.8'
+        addGameVersion '1.9'
+        addGameVersion '1.10'
+        addGameVersion '1.10'
+        addGameVersion '1.11'
+        addGameVersion '1.12'
+    }
+    options {
+        javaVersionAutoDetect = false
+    }
+}

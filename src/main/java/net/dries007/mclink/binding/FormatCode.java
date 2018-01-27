@@ -34,12 +34,18 @@ public enum FormatCode
     ITALIC('o'),
     RESET('r');
 
-    public static final char FORMAT_CHAR = '§';
+    public static final String FORMAT_CHAR = "§";
 
     public final char c;
 
     FormatCode(char c)
     {
         this.c = c;
+    }
+
+    @Override
+    public String toString()
+    {
+        return FORMAT_CHAR + c;
     }
 }

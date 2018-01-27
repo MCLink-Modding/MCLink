@@ -142,7 +142,7 @@ public abstract class MCLinkCommon implements IMinecraft
     @Override
     public boolean close()
     {
-        boolean b = config.setClosed(false);
+        boolean b = config.setClosed(true);
         if (b) this.sendMessage("[" + Constants.MODNAME + "] The server is now closed!");
         return b;
     }
@@ -155,11 +155,9 @@ public abstract class MCLinkCommon implements IMinecraft
             {
                 latestStatus = API.getStatus();
 
-                if (latestStatus.message != null) logger.warn(latestStatus.message);
-
                 if (Constants.API_VERSION == latestStatus.apiVersion)
                 {
-                    sender.sendMessage("API version outdated. Please update ASAP", FormatCode.GREEN);
+                    sender.sendMessage("API version up to date.", FormatCode.GREEN);
                 }
                 else
                 {
@@ -222,7 +220,7 @@ public abstract class MCLinkCommon implements IMinecraft
         }
 
         UUID_STATUS_MAP.put(player.getUuid(), Marker.IN_PROGRESS);
-        logger.info("Player {0} [{1}] authorization is being checked...", player);
+        logger.info("Player {0} authorization is being checked...", player);
 
         runner.accept(() -> check(player));
     }
