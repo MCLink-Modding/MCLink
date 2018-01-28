@@ -33,8 +33,9 @@ Copyright &copy; 2017 - 2018 Dries007. **All rights reserved.**
 2. Official builds can be distributed on any freely accessible platform.
    1. List of official build sources:
       1. [The MCLink website](https://mclink.dries007.net/)
-      2. CurseForge [1](https://www.curseforge.com/minecraft/mc-mods/mclink) or [2](https://minecraft.curseforge.com/projects/mclink)
-      3. [The build server](https://jenkins.dries007.net/job/MCLink/)
+      2. CurseForge: [1](https://www.curseforge.com/minecraft/mc-mods/mclink) or [2](https://minecraft.curseforge.com/projects/mclink)
+      3. Bukkit: [1](https://www.curseforge.com/minecraft/bukkit-plugins/mclink) or [2](https://dev.bukkit.org/projects/mclink)
+      4. [The build server](https://jenkins.dries007.net/job/MCLink/)
    2. You are allowed to _privately_ use a modified version while developing a Pull Request.
    3. A freely accessible platform is defined as a platform requiring no payment for access.
       So called "Premium" access (for example payment in exchange for removal of advertisements or faster downloads) is allowed.

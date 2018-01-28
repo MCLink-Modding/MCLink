@@ -86,44 +86,40 @@ subprojects {
             jarTask.appendix = 'Forge-' + project.minecraft.version
         }
 
-        processResources
-                {
-                    inputs.property "version", project.version
-                    inputs.property "mcversion", project.minecraft.version
+        processResources {
+            inputs.property "version", project.version
+            inputs.property "mcversion", project.minecraft.version
 
-                    from(sourceSets.main.resources.srcDirs) {
-                        include 'mcmod.info'
-                        expand 'version': project.version, 'mcversion': project.minecraft.version
-                    }
+            from(sourceSets.main.resources.srcDirs) {
+                include 'mcmod.info'
+                expand 'version': project.version, 'mcversion': project.minecraft.version
+            }
 
-                    from(sourceSets.main.resources.srcDirs) {
-                        exclude 'mcmod.info'
-                    }
+            from(sourceSets.main.resources.srcDirs) {
+                exclude 'mcmod.info'
+            }
 
-                    doLast {
-                        //noinspection GroovyAssignabilityCheck
-                        def updateFile = new File(project.archivesBaseName.toLowerCase() + '.json')
-                        def json
-                        if (updateFile.exists()) {
-                            json = new JsonSlurper().parseText(updateFile.getText())
-                        } else {
-                            def builder = new JsonBuilder()
-                            json = builder(
-                                    homepage: "https://mclink.dries007.net",
-                                    promos: new HashMap<>()
-                            )
-                        }
-                        //noinspection GroovyAssignabilityCheck
-                        json['promos'][project.minecraft.version + '-latest'] = project.version
-                        //noinspection GroovyAssignabilityCheck
-                        json['promos'][project.minecraft.version + '-recommended'] = project.version
-                        if (!json.containsKey(project.minecraft.version)) json.put(project.minecraft.version, new HashMap<>())
-                        //noinspection GroovyAssignabilityCheck
-                        def version = json[project.minecraft.version]
-                        version.put(project.version, getChangeLog())
-                        updateFile.write JsonOutput.prettyPrint(JsonOutput.toJson(json))
-                    }
+            doLast {
+                //noinspection GroovyAssignabilityCheck
+                def updateFile = new File(project.archivesBaseName.toLowerCase() + '.json')
+                def json
+                if (updateFile.exists()) {
+                    json = new JsonSlurper().parseText(updateFile.getText())
+                } else {
+                    def builder = new JsonBuilder()
+                    json = builder(homepage: "https://mclink.dries007.net", promos: new HashMap<>())
                 }
+                //noinspection GroovyAssignabilityCheck
+                json['promos'][project.minecraft.version + '-latest'] = project.version
+                //noinspection GroovyAssignabilityCheck
+                json['promos'][project.minecraft.version + '-recommended'] = project.version
+                if (!json.containsKey(project.minecraft.version)) json.put(project.minecraft.version, new HashMap<>())
+                //noinspection GroovyAssignabilityCheck
+                def version = json[project.minecraft.version]
+                version.put(project.version, getChangeLog())
+                updateFile.write JsonOutput.prettyPrint(JsonOutput.toJson(json))
+            }
+        }
 
         rootProject.setupDecompWorkspace.dependsOn setupDecompWorkspace
         rootProject.setupDevWorkspace.dependsOn setupDevWorkspace

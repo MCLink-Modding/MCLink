@@ -23,7 +23,7 @@ import org.apache.tools.ant.filters.ReplaceTokens
 
 processResources {
     from(sourceSets.main.resources.srcDirs) {
-        filter ReplaceTokens, tokens: [version: version]
+        filter ReplaceTokens, tokens: [version: rootProject.version]
     }
 }
 
@@ -34,6 +34,7 @@ curseforge {
         releaseType = 'beta'
         changelog = rootProject.getChangeLog() + '\n[Automatic build]'
         addGameVersion '1.8'
+        addGameVersion '1.8.1'
         addGameVersion '1.9'
         addGameVersion '1.10'
         addGameVersion '1.10'
