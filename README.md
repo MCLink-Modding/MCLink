@@ -7,12 +7,35 @@ Target comparability is Java 8, Minecraft 1.7.10+ (Missing versions may be reque
 
 For Forge there will be separate versions with MC version included in the jar's name as appendix.
 
+Bugs
+----
+
+Please report bugs via GitHub, [Discord](https://discord.gg/NxwY6X8) or [Twitter](https://twitter.com/driesk007). 
+
+Features
+--------
+
+- **Does not replace existing whitelist.**
+  You can still manually whitelist people. OPs also bypass the authentication check.
+- **No wait time.**
+  Once your accounts are linked, server access is instant.
+- **No need to "whitelist yourself" for every server.**
+  Linked accounts work across all servers that use MCLink.
+- **Multi-platform support.**
+  Support for Forge & Bukkit (and Spigot). Others are being worked on.
+- **Multi-service support.**
+  Supports Twitch, Patreon & GameWhisp. Others are being worked on.
+- **Multi-community servers.**
+  Any combination of services and server owners is possible.
+
+Feature requests can be made via GitHub issues.
+
 License / Distribution
 ----------------------
 
 Copyright &copy; 2017 - 2018 Dries007. **All rights reserved.**
 
-[Publicly visible source != open source!](https://choosealicense.com/no-permission/)
+[Publicly visible source != open source](https://choosealicense.com/no-permission/)!
 
 ### Source code permissions:
 
@@ -32,7 +55,7 @@ Copyright &copy; 2017 - 2018 Dries007. **All rights reserved.**
    This includes stripping signing information!
 2. Official builds can be distributed on any freely accessible platform.
    1. List of official build sources:
-      1. [The MCLink website](https://mclink.dries007.net/)
+      1. [The MCLink website](https://mclink.dries007.net/mods)
       2. CurseForge: [1](https://www.curseforge.com/minecraft/mc-mods/mclink) or [2](https://minecraft.curseforge.com/projects/mclink)
       3. Bukkit: [1](https://www.curseforge.com/minecraft/bukkit-plugins/mclink) or [2](https://dev.bukkit.org/projects/mclink)
       4. [The build server](https://jenkins.dries007.net/job/MCLink/)
