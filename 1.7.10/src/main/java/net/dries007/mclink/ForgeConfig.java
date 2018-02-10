@@ -97,6 +97,6 @@ public class ForgeConfig extends CommonConfig
     @Override
     protected void setServiceComment(String name, String comment)
     {
-        cfg.getCategory(name).setComment(comment);
+        cfg.getCategory(CAT).get(name).comment = comment;
     }
 }
