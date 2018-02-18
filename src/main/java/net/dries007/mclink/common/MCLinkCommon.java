@@ -205,6 +205,12 @@ public abstract class MCLinkCommon implements IMinecraft
             return;
         }
 
+        if (config.isFreeToJoin()) {
+            logger.info("Player {0} was authorized because the server is allowing all players", player);
+            UUID_STATUS_MAP.put(player.getUuid(), Marker.ALLOWED);
+            return;
+        }
+
         if (whitelisted) // not cached
         {
             logger.info("Player {0} was authorized because they are on the whitelist.", player);

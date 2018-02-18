@@ -47,6 +47,7 @@ public abstract class CommonConfig implements IConfig
 
     private boolean showStatus;
     private boolean closed;
+    private boolean freeToJoin;
 
     public static ImmutableList<String> splitArgumentString(String line)
     {
@@ -105,6 +106,11 @@ public abstract class CommonConfig implements IConfig
     }
 
     @Override
+    public boolean isFreeToJoin() {
+        return freeToJoin;
+    }
+
+    @Override
     public boolean isShowStatus()
     {
         return showStatus;
@@ -123,6 +129,7 @@ public abstract class CommonConfig implements IConfig
         String closedMessage = getString("closedMessage", "The server is currently closed for the public.", "The message people get when the server is closed.");
         boolean showStatus = getBoolean("showStatus", true, "Show important status messages to level 2+ OP players when they log in.");
         boolean closed = getBoolean("closed", false, "Use the ingame command /mclink to update this. Keeps track of if the server is closed.");
+        boolean freeToJoin = getBoolean("freeToJoin", false, "The server is free to join");
         int timeout = getInt("timeout", 30, 0, 300, "Timeout for the API requests in seconds. Keep this high enough to avoid players being kicked while actually being authorized. 0 = infinite timeout") * 1000;
 
         setGlobalCommentServices("All service options are put here.\n" +
@@ -174,6 +181,7 @@ public abstract class CommonConfig implements IConfig
         this.errorMessage = errorMessage;
         this.closedMessage = closedMessage;
         this.showStatus = showStatus;
+        this.freeToJoin = freeToJoin;
 
         if (this.closed != closed)
         {
