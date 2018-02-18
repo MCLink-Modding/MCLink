@@ -41,7 +41,7 @@ public final class MCLink extends JavaPlugin implements Listener
         }
 
         @Override
-        protected void kickAsync(IPlayer player, String msg)
+        protected void authCompleteAsync(IPlayer player, String msg)
         {
             Bukkit.getScheduler().runTask(MCLink.this, () -> Bukkit.getPlayer(player.getUuid()).kickPlayer(msg));
         }

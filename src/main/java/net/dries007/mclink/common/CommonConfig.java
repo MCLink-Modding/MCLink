@@ -124,7 +124,7 @@ public abstract class CommonConfig implements IConfig
         ImmutableMap<String, Service> services = API.getServices();
         Table<String, String, List<String>> tokenConfig = HashBasedTable.create();
 
-        String kickMessage = getString("kickMessage", "This is an MCLink protected server. Link your accounts via " + Constants.BASE_URL + " and make sure you are subscribed to the right people.", "The message used to kickAsync players. Make sure to include instructions on how to get on!");
+        String kickMessage = getString("kickMessage", "This is an MCLink protected server. Link your accounts via " + Constants.BASE_URL + " and make sure you are subscribed to the right people.", "The message used to kick players if they've been blocked. Make sure to include instructions on how to get on!");
         String errorMessage = getString("errorMessage", "MCLink could not verify your status. Please contact a server admin.", "The message people get when an error happens while MCLink checks their ID.");
         String closedMessage = getString("closedMessage", "The server is currently closed for the public.", "The message people get when the server is closed.");
         boolean showStatus = getBoolean("showStatus", true, "Show important status messages to level 2+ OP players when they log in.");

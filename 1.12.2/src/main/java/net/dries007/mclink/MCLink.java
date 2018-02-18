@@ -94,7 +94,7 @@ public class MCLink extends MCLinkCommon
     }
 
     @Override
-    protected void kickAsync(IPlayer player, String msg)
+    protected void authCompleteAsync(IPlayer player, String msg)
     {
         server.addScheduledTask(() -> {
             EntityPlayerMP p = server.getPlayerList().getPlayerByUUID(player.getUuid());

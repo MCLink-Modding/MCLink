@@ -142,7 +142,7 @@ public class MCLink extends MCLinkCommon
     }
 
     @Override
-    protected void kickAsync(IPlayer player, String msg)
+    protected void authCompleteAsync(IPlayer player, String msg)
     {
         // 1.7.10 doesn't have threading, so use server tick even to sync.
         TO_KICK.put(player.getName(), msg);

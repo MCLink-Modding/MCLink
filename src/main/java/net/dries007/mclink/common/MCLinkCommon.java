@@ -41,7 +41,7 @@ public abstract class MCLinkCommon implements IMinecraft
     private Status latestStatus;
     private String branding;
 
-    protected abstract void kickAsync(IPlayer player, String msg);
+    protected abstract void authCompleteAsync(IPlayer player, String msg);
 
     @Nullable
     protected abstract String nameFromUUID(UUID uuid);
@@ -81,13 +81,13 @@ public abstract class MCLinkCommon implements IMinecraft
             case IN_PROGRESS:
                 break;
             case DENIED_NO_AUTH:
-                kickAsync(player, config.getKickMessage());
+                authCompleteAsync(player, config.getKickMessage());
                 return;
             case DENIED_ERROR:
-                kickAsync(player, config.getErrorMessage());
+                authCompleteAsync(player, config.getErrorMessage());
                 return;
             case DENIED_CLOSED:
-                kickAsync(player, config.getClosedMessage());
+                authCompleteAsync(player, config.getClosedMessage());
                 return;
         }
         if (sendStatus && latestStatus != null && config.isShowStatus())
@@ -243,7 +243,7 @@ public abstract class MCLinkCommon implements IMinecraft
                 if (UUID_STATUS_MAP.put(player.getUuid(), Marker.DENIED_NO_AUTH) == null) // was already removed by login
                 {
                     UUID_STATUS_MAP.remove(player.getUuid()); // login event already past, so we don't need this anymore.
-                    kickAsync(player, config.getKickMessage());
+                    authCompleteAsync(player, config.getKickMessage());
                 }
             }
             else
@@ -270,7 +270,7 @@ public abstract class MCLinkCommon implements IMinecraft
             if (UUID_STATUS_MAP.put(player.getUuid(), Marker.DENIED_ERROR) == null) // was already removed by login
             {
                 UUID_STATUS_MAP.remove(player.getUuid()); // login event already past, so we don't need this anymore.
-                kickAsync(player, config.getErrorMessage());
+                authCompleteAsync(player, config.getErrorMessage());
             }
         }
     }
