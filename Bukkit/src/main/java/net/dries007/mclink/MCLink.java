@@ -55,7 +55,12 @@ public final class MCLink extends JavaPlugin implements Listener
                     @Override
                     public void run() {
                         // Call the event with a Bukkit player and the list of authentications
-                        Bukkit.getServer().getPluginManager().callEvent(new MCLinkAuthEvent(Bukkit.getPlayer(player.getUuid()), authentications));
+                        org.bukkit.entity.Player bukkitPlayer = Bukkit.getPlayer(player.getUuid());
+                        if (bukkitPlayer != null) {
+                            Bukkit.getServer().getPluginManager().callEvent(new MCLinkAuthEvent(bukkitPlayer, authentications));
+                        } else {
+                            getLogger().info(String.format("Player %s went away before MCLink event could be triggered",player.getName()));
+                        }
                     }
                 }.runTask(MCLink.this);
             }
