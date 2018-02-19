@@ -41,7 +41,7 @@ public abstract class MCLinkCommon implements IMinecraft
     private Status latestStatus;
     private String branding;
 
-    protected abstract void authCompleteAsync(IPlayer player, String msg);
+    protected abstract void authCompleteAsync(IPlayer player, String msg, UUID name, ImmutableCollection<Authentication> authentications);
 
     @Nullable
     protected abstract String nameFromUUID(UUID uuid);
@@ -81,13 +81,14 @@ public abstract class MCLinkCommon implements IMinecraft
             case IN_PROGRESS:
                 break;
             case DENIED_NO_AUTH:
-                authCompleteAsync(player, config.getKickMessage());
+                // null authentications means "kick"
+                authCompleteAsync(player, config.getKickMessage(), player.getUuid(), null);
                 return;
             case DENIED_ERROR:
-                authCompleteAsync(player, config.getErrorMessage());
+                authCompleteAsync(player, config.getErrorMessage(), player.getUuid(), null);
                 return;
             case DENIED_CLOSED:
-                authCompleteAsync(player, config.getClosedMessage());
+                authCompleteAsync(player, config.getClosedMessage(), player.getUuid(), null);
                 return;
         }
         if (sendStatus && latestStatus != null && config.isShowStatus())
@@ -208,6 +209,9 @@ public abstract class MCLinkCommon implements IMinecraft
         if (config.isFreeToJoin()) {
             logger.info("Player {0} was authorized because the server is allowing all players", player);
             UUID_STATUS_MAP.put(player.getUuid(), Marker.ALLOWED);
+            // Want to check status anyway, so we can maybe fire off an Event
+            logger.info("Player {0} authorization is being checked anyway...", player);
+            runner.accept(() -> check(player, true));
             return;
         }
 
@@ -228,22 +232,24 @@ public abstract class MCLinkCommon implements IMinecraft
         UUID_STATUS_MAP.put(player.getUuid(), Marker.IN_PROGRESS);
         logger.info("Player {0} authorization is being checked...", player);
 
-        runner.accept(() -> check(player));
+        // At this point, we're a non-free server awaiting auth. Free is false.
+        runner.accept(() -> check(player, false));
     }
 
-    private void check(IPlayer player)
+    private void check(IPlayer player,boolean free)
     {
         try
         {
             ImmutableMultimap<UUID, Authentication> map = API.getAuthorization(config.getTokenConfig(), player.getUuid());
             ImmutableCollection<Authentication> auth = map.get(player.getUuid());
-            if (auth.isEmpty())
+            if (auth.isEmpty() & !free)
             {
                 logger.info("Player {0} authorization was denied by MCLink.", player);
                 if (UUID_STATUS_MAP.put(player.getUuid(), Marker.DENIED_NO_AUTH) == null) // was already removed by login
                 {
                     UUID_STATUS_MAP.remove(player.getUuid()); // login event already past, so we don't need this anymore.
-                    authCompleteAsync(player, config.getKickMessage());
+                    // null authentications means "kick"
+                    authCompleteAsync(player, config.getKickMessage(), player.getUuid(), null);
                 }
             }
             else
@@ -256,6 +262,8 @@ public abstract class MCLinkCommon implements IMinecraft
                     auths.add(a.name + " from " + (name == null ? a.token : name + "[" + a.token + "]") + " with " + a.extra);
                 }
                 logger.info("Player {0} was authorized by: {1}", player, auths);
+                // send the authentications to the mod in question
+                authCompleteAsync(player, null, player.getUuid(), auth);
                 if (UUID_STATUS_MAP.put(player.getUuid(), Marker.ALLOWED) == null) // was already removed by login
                 {
                     UUID_STATUS_MAP.remove(player.getUuid()); // login event already passed, so we don't need this anymore.
@@ -270,7 +278,8 @@ public abstract class MCLinkCommon implements IMinecraft
             if (UUID_STATUS_MAP.put(player.getUuid(), Marker.DENIED_ERROR) == null) // was already removed by login
             {
                 UUID_STATUS_MAP.remove(player.getUuid()); // login event already past, so we don't need this anymore.
-                authCompleteAsync(player, config.getErrorMessage());
+                // null authentications means "kick"
+                authCompleteAsync(player, config.getErrorMessage(), player.getUuid(), null);
             }
         }
     }

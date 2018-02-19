@@ -5,6 +5,8 @@
 package net.dries007.mclink;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableCollection;
+import net.dries007.mclink.api.Authentication;
 import net.dries007.mclink.binding.FormatCode;
 import net.dries007.mclink.binding.IPlayer;
 import net.dries007.mclink.common.JavaLogger;
@@ -17,6 +19,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
@@ -41,9 +44,21 @@ public final class MCLink extends JavaPlugin implements Listener
         }
 
         @Override
-        protected void authCompleteAsync(IPlayer player, String msg)
+        protected void authCompleteAsync(IPlayer player, String msg, UUID name, ImmutableCollection<Authentication> authentications)
         {
-            Bukkit.getScheduler().runTask(MCLink.this, () -> Bukkit.getPlayer(player.getUuid()).kickPlayer(msg));
+            if (authentications == null) {
+                // null authentications means "kick"
+                Bukkit.getScheduler().runTask(MCLink.this, () -> Bukkit.getPlayer(player.getUuid()).kickPlayer(msg));
+            } else {
+                // Authentication returned something, now schedule a synchronous Event for Bukkit plugins to handle
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        // Call the event with a Bukkit player and the list of authentications
+                        Bukkit.getServer().getPluginManager().callEvent(new MCLinkAuthEvent(Bukkit.getPlayer(player.getUuid()), authentications));
+                    }
+                }.runTask(MCLink.this);
+            }
         }
 
         @Nullable
