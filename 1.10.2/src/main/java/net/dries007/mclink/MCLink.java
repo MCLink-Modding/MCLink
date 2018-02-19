@@ -108,6 +108,8 @@ public class MCLink extends MCLinkCommon
     @Override
     protected void authCompleteAsync(IPlayer player, String msg, UUID name, ImmutableCollection<Authentication> authentications)
     {
+        // null authentications means "kick"
+        if (authentications != null) return;
         server.addScheduledTask(() -> {
             EntityPlayerMP p = server.getPlayerList().getPlayerByUUID(player.getUuid());
             //noinspection ConstantConditions

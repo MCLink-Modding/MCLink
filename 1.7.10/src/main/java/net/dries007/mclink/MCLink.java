@@ -146,6 +146,8 @@ public class MCLink extends MCLinkCommon
     @Override
     protected void authCompleteAsync(IPlayer player, String msg, UUID name, ImmutableCollection<Authentication> authentications)
     {
+        // null authentications means "kick"
+        if (authentications != null) return;
         // 1.7.10 doesn't have threading, so use server tick even to sync.
         TO_KICK.put(player.getName(), msg);
     }
