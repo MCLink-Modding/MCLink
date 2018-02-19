@@ -196,6 +196,10 @@ public abstract class MCLinkCommon implements IMinecraft
         {
             logger.info("Player {0} was authorized because they are on the OP list.", player);
             UUID_STATUS_MAP.put(player.getUuid(), Marker.ALLOWED);
+            // Want to check status anyway, so we can maybe fire off an Event
+            logger.info("Player {0} authorization is being checked anyway...", player);
+            // Set free to true to disable kicking
+            runner.accept(() -> check(player, true));
             return;
         }
 
@@ -219,6 +223,10 @@ public abstract class MCLinkCommon implements IMinecraft
         {
             logger.info("Player {0} was authorized because they are on the whitelist.", player);
             UUID_STATUS_MAP.put(player.getUuid(), Marker.ALLOWED);
+            // Want to check status anyway, so we can maybe fire off an Event
+            logger.info("Player {0} authorization is being checked anyway...", player);
+            // Set free to true to disable kicking
+            runner.accept(() -> check(player, true));
             return;
         }
 
