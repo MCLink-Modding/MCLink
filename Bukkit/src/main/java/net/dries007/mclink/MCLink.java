@@ -44,13 +44,10 @@ public final class MCLink extends JavaPlugin implements Listener
         }
 
         @Override
-        protected void authCompleteAsync(IPlayer player, String msg, UUID name, ImmutableCollection<Authentication> authentications)
+        protected void authCompleteAsync(IPlayer player, String msg, UUID name, ImmutableCollection<Authentication> authentications, Marker authresult)
         {
-            if (authentications == null) {
-                // null authentications means "kick"
-                Bukkit.getScheduler().runTask(MCLink.this, () -> Bukkit.getPlayer(player.getUuid()).kickPlayer(msg));
-            } else {
-                // Authentication returned something, now schedule a synchronous Event for Bukkit plugins to handle
+            if (authresult == Marker.ALLOWED) {
+                // Authentication succeeded, now schedule a synchronous Event for Bukkit plugins to handle
                 new BukkitRunnable() {
                     @Override
                     public void run() {
@@ -63,6 +60,9 @@ public final class MCLink extends JavaPlugin implements Listener
                         }
                     }
                 }.runTask(MCLink.this);
+            } else {
+                // authresult was DENIED_*, kick the player
+                Bukkit.getScheduler().runTask(MCLink.this, () -> Bukkit.getPlayer(player.getUuid()).kickPlayer(msg));
             }
         }
 
