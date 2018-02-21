@@ -39,6 +39,8 @@ public interface IConfig
      */
     boolean setClosed(boolean closed);
 
+    boolean isFreeToJoin();
+
     boolean isShowStatus();
 
     @NotNull

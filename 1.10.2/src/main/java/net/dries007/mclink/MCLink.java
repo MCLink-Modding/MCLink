@@ -4,8 +4,10 @@
 
 package net.dries007.mclink;
 
+import com.google.common.collect.ImmutableCollection;
 import com.mojang.authlib.GameProfile;
 import net.dries007.mclink.api.APIException;
+import net.dries007.mclink.api.Authentication;
 import net.dries007.mclink.api.Constants;
 import net.dries007.mclink.binding.FormatCode;
 import net.dries007.mclink.binding.IConfig;
@@ -104,8 +106,10 @@ public class MCLink extends MCLinkCommon
     }
 
     @Override
-    protected void kickAsync(IPlayer player, String msg)
+    protected void authCompleteAsync(IPlayer player, String msg, UUID name, ImmutableCollection<Authentication> authentications, Marker authresult)
     {
+        // Don't kick players unless authresult was one of the DENIED_* values
+        if (authresult == Marker.ALLOWED) return;
         server.addScheduledTask(() -> {
             EntityPlayerMP p = server.getPlayerList().getPlayerByUUID(player.getUuid());
             //noinspection ConstantConditions
