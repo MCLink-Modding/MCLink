@@ -19,7 +19,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
@@ -27,6 +26,9 @@ import java.util.logging.Level;
 
 import static org.bukkit.Server.BROADCAST_CHANNEL_ADMINISTRATIVE;
 
+/**
+ * @author Dries007
+ */
 public final class MCLink extends JavaPlugin implements Listener
 {
     private final MCLinkCommon common = new MCLinkCommon()
@@ -44,26 +46,19 @@ public final class MCLink extends JavaPlugin implements Listener
         }
 
         @Override
-        protected void authCompleteAsync(IPlayer player, String msg, UUID name, ImmutableCollection<Authentication> authentications, Marker authresult)
+        protected void authCompleteAsync(IPlayer player, ImmutableCollection<Authentication> authentications, Marker result)
         {
-            if (authresult == Marker.ALLOWED) {
-                // Authentication succeeded, now schedule a synchronous Event for Bukkit plugins to handle
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        // Call the event with a Bukkit player and the list of authentications
-                        org.bukkit.entity.Player bukkitPlayer = Bukkit.getPlayer(player.getUuid());
-                        if (bukkitPlayer != null) {
-                            Bukkit.getServer().getPluginManager().callEvent(new MCLinkAuthEvent(bukkitPlayer, authentications));
-                        } else {
-                            getLogger().info(String.format("Player %s went away before MCLink event could be triggered",player.getName()));
-                        }
-                    }
-                }.runTask(MCLink.this);
-            } else {
-                // authresult was DENIED_*, kick the player
-                Bukkit.getScheduler().runTask(MCLink.this, () -> Bukkit.getPlayer(player.getUuid()).kickPlayer(msg));
-            }
+            Bukkit.getScheduler().runTask(MCLink.this, () -> {
+                // Only kick if we should
+                if (result != Marker.ALLOWED)
+                {
+                    org.bukkit.entity.Player p = Bukkit.getPlayer(player.getUuid());
+                    if (p != null) // null check in case user disconnected
+                        p.kickPlayer(getConfig().getMessage(result));
+                }
+                // Fire event in all cases
+                Bukkit.getServer().getPluginManager().callEvent(new MCLinkAuthEvent(Bukkit.getOfflinePlayer(player.getUuid()), authentications, result));
+            });
         }
 
         @Nullable

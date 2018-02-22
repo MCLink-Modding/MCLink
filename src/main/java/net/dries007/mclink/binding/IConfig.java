@@ -6,6 +6,7 @@ package net.dries007.mclink.binding;
 
 import com.google.common.collect.Table;
 import net.dries007.mclink.api.APIException;
+import net.dries007.mclink.common.MCLinkCommon;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,6 +46,8 @@ public interface IConfig
 
     @NotNull
     Table<String, String, List<String>> getTokenConfig();
+
+    String getMessage(MCLinkCommon.Marker marker);
 
     class ConfigException extends Exception {}
 }

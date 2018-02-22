@@ -92,6 +92,22 @@ public abstract class CommonConfig implements IConfig
     }
 
     @Override
+    public String getMessage(MCLinkCommon.Marker marker)
+    {
+        switch (marker)
+        {
+            default:
+                return null;
+            case DENIED_NO_AUTH:
+                return getKickMessage();
+            case DENIED_ERROR:
+                return getErrorMessage();
+            case DENIED_CLOSED:
+                return getClosedMessage();
+        }
+    }
+
+    @Override
     public boolean isClosed()
     {
         return closed;

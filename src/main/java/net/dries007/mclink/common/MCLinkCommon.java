@@ -8,6 +8,7 @@ import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import net.dries007.mclink.api.*;
 import net.dries007.mclink.binding.*;
@@ -41,7 +42,7 @@ public abstract class MCLinkCommon implements IMinecraft
     private Status latestStatus;
     private String branding;
 
-    protected abstract void authCompleteAsync(IPlayer player, String msg, UUID name, ImmutableCollection<Authentication> authentications, Marker authresult);
+    protected abstract void authCompleteAsync(IPlayer player, ImmutableCollection<Authentication> authentications, Marker result);
 
     @Nullable
     protected abstract String nameFromUUID(UUID uuid);
@@ -74,21 +75,16 @@ public abstract class MCLinkCommon implements IMinecraft
     {
         // If the map has it set to DENIED already, the lookup finished before we got here and we can kick the player.
         // If the marker was something else, we remove the marker to the async thread knows it needs to kick the player itself.
-        switch (UUID_STATUS_MAP.remove(player.getUuid()))
+        Marker m = UUID_STATUS_MAP.remove(player.getUuid());
+        switch (m)
         {
             case ALLOWED:
                 break;
             case IN_PROGRESS:
                 break;
-            case DENIED_NO_AUTH:
-                authCompleteAsync(player, config.getKickMessage(), player.getUuid(), null, Marker.DENIED_NO_AUTH);
-                return;
-            case DENIED_ERROR:
-                authCompleteAsync(player, config.getErrorMessage(), player.getUuid(), null, Marker.DENIED_ERROR);
-                return;
-            case DENIED_CLOSED:
-                authCompleteAsync(player, config.getClosedMessage(), player.getUuid(), null, Marker.DENIED_CLOSED);
-                return;
+            default:
+                authCompleteAsync(player, ImmutableList.of(), m);
+                break;
         }
         if (sendStatus && latestStatus != null && config.isShowStatus())
         {
@@ -255,8 +251,7 @@ public abstract class MCLinkCommon implements IMinecraft
                 if (UUID_STATUS_MAP.put(player.getUuid(), Marker.DENIED_NO_AUTH) == null) // was already removed by login
                 {
                     UUID_STATUS_MAP.remove(player.getUuid()); // login event already past, so we don't need this anymore.
-                    // null authentications means "kick"
-                    authCompleteAsync(player, config.getKickMessage(), player.getUuid(), null, Marker.DENIED_NO_AUTH);
+                    authCompleteAsync(player, ImmutableList.of(), Marker.DENIED_NO_AUTH);
                 }
             }
             else
@@ -270,7 +265,7 @@ public abstract class MCLinkCommon implements IMinecraft
                 }
                 logger.info("Player {0} was authorized by: {1}", player, auths);
                 // send the authentications to the mod in question
-                authCompleteAsync(player, null, player.getUuid(), auth, Marker.ALLOWED);
+                authCompleteAsync(player, auth, Marker.ALLOWED);
                 if (UUID_STATUS_MAP.put(player.getUuid(), Marker.ALLOWED) == null) // was already removed by login
                 {
                     UUID_STATUS_MAP.remove(player.getUuid()); // login event already passed, so we don't need this anymore.
@@ -285,8 +280,7 @@ public abstract class MCLinkCommon implements IMinecraft
             if (UUID_STATUS_MAP.put(player.getUuid(), Marker.DENIED_ERROR) == null) // was already removed by login
             {
                 UUID_STATUS_MAP.remove(player.getUuid()); // login event already past, so we don't need this anymore.
-                // null authentications means "kick"
-                authCompleteAsync(player, config.getErrorMessage(), player.getUuid(), null, Marker.DENIED_ERROR);
+                authCompleteAsync(player, ImmutableList.of(), Marker.DENIED_ERROR);
             }
         }
     }

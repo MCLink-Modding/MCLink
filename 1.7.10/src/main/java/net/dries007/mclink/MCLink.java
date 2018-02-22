@@ -144,12 +144,16 @@ public class MCLink extends MCLinkCommon
     }
 
     @Override
-    protected void authCompleteAsync(IPlayer player, String msg, UUID name, ImmutableCollection<Authentication> authentications, Marker authresult)
+    protected void authCompleteAsync(IPlayer player, ImmutableCollection<Authentication> authentications, Marker result)
     {
-        // Don't kick players unless authresult was one of the DENIED_* values
-        if (authresult == Marker.ALLOWED) return;
-        // 1.7.10 doesn't have threading, so use server tick even to sync.
-        TO_KICK.put(player.getName(), msg);
+        // Fire event (ASYNC) in all cases.
+        MinecraftForge.EVENT_BUS.post(new MCLinkAuthEvent(player.getUuid(), authentications, result));
+        // Don't kick players unless result was one of the DENIED_* values
+        if (result != Marker.ALLOWED)
+        {
+            // 1.7.10 doesn't have threading, so use server tick even to sync.
+            TO_KICK.put(player.getName(), getConfig().getMessage(result));
+        }
     }
 
     @Nullable

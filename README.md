@@ -30,6 +30,11 @@ Features
 
 Feature requests can be made via GitHub issues.
 
+Thanks
+------
+
+- [@Brianetta](https://github.com/Brianetta) for the work on the Bukkit plugin.
+
 License / Distribution
 ----------------------
 
