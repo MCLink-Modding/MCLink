@@ -9,7 +9,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMultimap;
 import net.dries007.mclink.api.*;
 import net.dries007.mclink.binding.*;
 import org.jetbrains.annotations.NotNull;
@@ -50,6 +49,19 @@ public abstract class MCLinkCommon implements IMinecraft
     public void init() throws IConfig.ConfigException, IOException, APIException
     {
         API.setMetaData(getBranding(), getModVersion(), getMcVersion());
+
+        if (Constants.STAGING)
+        {
+            logger.warn("");
+            logger.warn("");
+            logger.warn("");
+            logger.warn("STAGING ENVIRONMENT ACTIVE!");
+            logger.warn("DO NOT USE IN LIVE SERVER");
+            logger.warn("");
+            logger.warn("");
+            logger.warn("");
+        }
+
         String warnings = config.reload();
         if (!Strings.isNullOrEmpty(warnings)) logger.warn(warnings);
     }
@@ -93,6 +105,8 @@ public abstract class MCLinkCommon implements IMinecraft
             if (latestStatus.message != null)
                 player.sendMessage("[MCLink] API status message: " + latestStatus.message);
         }
+        if (Constants.STAGING)
+            player.sendMessage("[MCLink] Staging active! Don't use on live servers!", FormatCode.RED);
     }
 
     @Override
@@ -193,8 +207,8 @@ public abstract class MCLinkCommon implements IMinecraft
             UUID_STATUS_MAP.put(player.getUuid(), Marker.ALLOWED);
             // Want to check status anyway, so we can maybe fire off an Event
             logger.info("Player {0} authorization is being checked anyway...", player);
-            // Set free to true to disable kicking
-            runner.accept(() -> check(player, true));
+            // Check for events, so shouldKick = false
+            runner.accept(() -> check(player, false));
             return;
         }
 
@@ -202,15 +216,18 @@ public abstract class MCLinkCommon implements IMinecraft
         {
             logger.info("Player {0} denied access because server is closed.", player);
             UUID_STATUS_MAP.put(player.getUuid(), Marker.DENIED_CLOSED);
+            // No check for evens here, cause user won't get in.
             return;
         }
 
-        if (config.isFreeToJoin()) {
+        if (config.isFreeToJoin())
+        {
             logger.info("Player {0} was authorized because the server is allowing all players", player);
             UUID_STATUS_MAP.put(player.getUuid(), Marker.ALLOWED);
             // Want to check status anyway, so we can maybe fire off an Event
             logger.info("Player {0} authorization is being checked anyway...", player);
-            runner.accept(() -> check(player, true));
+            // Check for events, so shouldKick = false
+            runner.accept(() -> check(player, false));
             return;
         }
 
@@ -220,32 +237,27 @@ public abstract class MCLinkCommon implements IMinecraft
             UUID_STATUS_MAP.put(player.getUuid(), Marker.ALLOWED);
             // Want to check status anyway, so we can maybe fire off an Event
             logger.info("Player {0} authorization is being checked anyway...", player);
-            // Set free to true to disable kicking
-            runner.accept(() -> check(player, true));
-            return;
-        }
-
-        if (CACHE.getIfPresent(player) != null)
-        {
-            logger.info("Player {0} was authorized cached auth entries.", player);
-            UUID_STATUS_MAP.put(player.getUuid(), Marker.ALLOWED);
+            // Check for events, so shouldKick = false
+            runner.accept(() -> check(player, false));
             return;
         }
 
         UUID_STATUS_MAP.put(player.getUuid(), Marker.IN_PROGRESS);
         logger.info("Player {0} authorization is being checked...", player);
 
-        // At this point, we're a non-free server awaiting auth. Free is false.
-        runner.accept(() -> check(player, false));
+        // At this point, we're a non-free server awaiting auth. shouldKick is true.
+        runner.accept(() -> check(player, true));
     }
 
-    private void check(IPlayer player,boolean free)
+    private void check(IPlayer player, boolean shouldKick)
     {
         try
         {
-            ImmutableMultimap<UUID, Authentication> map = API.getAuthorization(config.getTokenConfig(), player.getUuid());
-            ImmutableCollection<Authentication> auth = map.get(player.getUuid());
-            if (auth.isEmpty() & !free)
+            // Cache contains previous auth values IF it was NOT empty.
+            ImmutableCollection<Authentication> auth = CACHE.getIfPresent(player.getUuid());
+            if (auth == null)
+                auth = API.getAuthorization(config.getTokenConfig(), player.getUuid()).get(player.getUuid());
+            if (auth.isEmpty() && shouldKick) // Still empty & kick
             {
                 logger.info("Player {0} authorization was denied by MCLink.", player);
                 if (UUID_STATUS_MAP.put(player.getUuid(), Marker.DENIED_NO_AUTH) == null) // was already removed by login
@@ -254,9 +266,9 @@ public abstract class MCLinkCommon implements IMinecraft
                     authCompleteAsync(player, ImmutableList.of(), Marker.DENIED_NO_AUTH);
                 }
             }
-            else
+            else // auth is not empty OR we are not kicking the player (op, whitelist, free server)
             {
-                CACHE.put(player.getUuid(), auth);
+                if (!auth.isEmpty()) CACHE.put(player.getUuid(), auth); // Cache, but not if empty!
                 List<String> auths = new ArrayList<>();
                 for (Authentication a : auth)
                 {
@@ -264,7 +276,7 @@ public abstract class MCLinkCommon implements IMinecraft
                     auths.add(a.name + " from " + (name == null ? a.token : name + "[" + a.token + "]") + " with " + a.extra);
                 }
                 logger.info("Player {0} was authorized by: {1}", player, auths);
-                // send the authentications to the mod in question
+                // send the authentications to generate events
                 authCompleteAsync(player, auth, Marker.ALLOWED);
                 if (UUID_STATUS_MAP.put(player.getUuid(), Marker.ALLOWED) == null) // was already removed by login
                 {

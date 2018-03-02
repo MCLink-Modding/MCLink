@@ -7,6 +7,8 @@ Target comparability is Java 8, Minecraft 1.7.10+ (Missing versions may be reque
 
 For Forge there will be separate versions with MC version included in the jar's name as appendix.
 
+If you want to use the staging, set environment property `mclink.staging` to `true`. (`-Dmclink.staging=True`)
+
 Bugs
 ----
 

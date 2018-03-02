@@ -25,7 +25,8 @@ public class Constants
     public static final String MODNAME = "MCLink";
     public static final int API_VERSION = 1;
 
-    public static final String BASE_URL = "https://mclink.dries007.net";
+    public static final boolean STAGING = Boolean.parseBoolean(System.getProperty("mclink.staging", Boolean.FALSE.toString()));
+    public static final String BASE_URL = STAGING ? "https://staging.mclink.dries007.net" : "https://mclink.dries007.net";
     public static final String API_URL = BASE_URL + "/api/" + API_VERSION + "/";
 
     public static final Type TYPE_MAP_STRING_STRING = new TypeToken<Map<String, String>>() {}.getType();

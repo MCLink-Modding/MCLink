@@ -19,6 +19,7 @@ import java.net.URLEncoder;
 import java.util.*;
 import java.util.Map.Entry;
 
+import static net.dries007.mclink.api.Constants.STAGING;
 import static net.dries007.mclink.api.Constants.TYPE_MAP_STRING_STRING;
 
 /**
@@ -71,6 +72,7 @@ public final class API
         if (branding != null) sb.append(branding.replaceAll("[;()\n\r]", "")).append("; ");
         String os = System.getProperty("os.name") + ' ' + System.getProperty("os.arch") + ' ' + System.getProperty("os.version");
         sb.append(os.replaceAll("[;()\n\r]", ""));
+        if (STAGING) sb.append("STAGING");
         userAgent = sb.append(')').toString();
     }
 
