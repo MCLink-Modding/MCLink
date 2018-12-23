@@ -68,7 +68,7 @@ public class Status
         {
             JsonObject root = json.getAsJsonObject();
             int apiVersion = context.deserialize(root.get("api_version"), int.class);
-            String message = context.deserialize(root.get("message"), int.class);
+            String message = context.deserialize(root.get("message"), String.class);
             String serverAddress = null;
             String serverVersion = null;
             JsonElement server = root.get("server");
