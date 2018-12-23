@@ -92,6 +92,7 @@ public class MCLink extends MCLinkCommon
 
         super.setSide(Side.SERVER);
         MinecraftForge.EVENT_BUS.register(this);
+        FMLCommonHandler.instance().bus().register(this);
     }
 
     @Mod.EventHandler
