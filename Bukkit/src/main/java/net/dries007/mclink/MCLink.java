@@ -1,10 +1,9 @@
 /*
- * Copyright (c) 2017 - 2018 Dries007. All rights reserved
+ * Copyright (c) 2017 - 2019 Dries007. All rights reserved
  */
 
 package net.dries007.mclink;
 
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableCollection;
 import net.dries007.mclink.api.Authentication;
 import net.dries007.mclink.binding.FormatCode;
@@ -83,28 +82,29 @@ public final class MCLink extends JavaPlugin implements Listener
     @Override
     public void onEnable()
     {
-        getLogger().setLevel(Level.FINEST);
-
-        common.setModVersion(getDescription().getVersion());
-        common.setMcVersion(Bukkit.getVersion());
-        common.setBranding(Bukkit.getName() + "v" + Bukkit.getBukkitVersion());
-        common.setLogger(new JavaLogger(getLogger()));
-        common.setConfig(new BukkitConfig(this));
-        common.setSide(MCLinkCommon.Side.SERVER);
-
         try
         {
+            getLogger().setLevel(Level.FINEST);
+
+            common.setModVersion(getDescription().getVersion());
+            common.setMcVersion(Bukkit.getVersion());
+            common.setBranding(Bukkit.getName() + "v" + Bukkit.getBukkitVersion());
+            common.setLogger(new JavaLogger(getLogger()));
+            common.setConfig(new BukkitConfig(this));
+            common.setSide(MCLinkCommon.Side.SERVER);
+
             common.init();
+
+            Bukkit.getServer().getPluginManager().registerEvents(this, this);
+            common.registerCommands(e -> getCommand(e.getName()).setExecutor(new CommandWrapper(this, common, e)));
+
+            common.getLogger().info("Enabled");
         }
         catch (Exception e)
         {
-            Throwables.propagate(e);
+            common.getLogger().error("WARNING! Something went wrong initializing... People won't be able to join.");
+            common.getLogger().catching(e);
         }
-
-        Bukkit.getServer().getPluginManager().registerEvents(this, this);
-        common.registerCommands(e -> getCommand(e.getName()).setExecutor(new CommandWrapper(this, common, e)));
-
-        common.getLogger().info("Enabled");
     }
 
     @Override
