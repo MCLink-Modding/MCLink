@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 - 2018 Dries007. All rights reserved
+ * Copyright (c) 2017 - 2019 Dries007. All rights reserved
  */
 
 package net.dries007.mclink;
@@ -10,6 +10,7 @@ import net.minecraft.command.ICommandSender;
 import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -94,6 +95,18 @@ public class SenderWrapper implements ISender
     public void sendMessage(String message, FormatCode formatCode)
     {
         sender.sendMessage(new TextComponentString(message).setStyle(new Style().setColor(getFormatCode(formatCode))));
+    }
+
+    @Override
+    public void sendMessageAsync(String message)
+    {
+        FMLCommonHandler.instance().getMinecraftServerInstance().addScheduledTask(() -> sendMessage(message));
+    }
+
+    @Override
+    public void sendMessageAsync(String message, FormatCode formatCode)
+    {
+        FMLCommonHandler.instance().getMinecraftServerInstance().addScheduledTask(() -> sendMessage(message, formatCode));
     }
 
     @Override

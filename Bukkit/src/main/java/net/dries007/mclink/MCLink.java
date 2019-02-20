@@ -45,6 +45,18 @@ public final class MCLink extends JavaPlugin implements Listener
         }
 
         @Override
+        public void sendMessageAsync(String message)
+        {
+            Bukkit.getScheduler().runTask(MCLink.this, () -> sendMessage(message));
+        }
+
+        @Override
+        public void sendMessageAsync(String message, FormatCode formatCode)
+        {
+            Bukkit.getScheduler().runTask(MCLink.this, () -> sendMessage(message, formatCode));
+        }
+
+        @Override
         protected void authCompleteAsync(IPlayer player, ImmutableCollection<Authentication> authentications, Marker result)
         {
             Bukkit.getScheduler().runTask(MCLink.this, () -> {
@@ -90,8 +102,7 @@ public final class MCLink extends JavaPlugin implements Listener
             common.setMcVersion(Bukkit.getVersion());
             common.setBranding(Bukkit.getName() + "v" + Bukkit.getBukkitVersion());
             common.setLogger(new JavaLogger(getLogger()));
-            common.setConfig(new BukkitConfig(this));
-            common.setSide(MCLinkCommon.Side.SERVER);
+            common.setConfigFolder(this.getDataFolder());
 
             common.init();
 

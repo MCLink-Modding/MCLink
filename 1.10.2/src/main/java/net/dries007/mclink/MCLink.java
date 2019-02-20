@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 - 2018 Dries007. All rights reserved
+ * Copyright (c) 2017 - 2019 Dries007. All rights reserved
  */
 
 package net.dries007.mclink;
@@ -10,7 +10,6 @@ import net.dries007.mclink.api.APIException;
 import net.dries007.mclink.api.Authentication;
 import net.dries007.mclink.api.Constants;
 import net.dries007.mclink.binding.FormatCode;
-import net.dries007.mclink.binding.IConfig;
 import net.dries007.mclink.binding.IPlayer;
 import net.dries007.mclink.common.Log4jLogger;
 import net.dries007.mclink.common.MCLinkCommon;
@@ -49,22 +48,17 @@ public class MCLink extends MCLinkCommon
     private MinecraftServer server;
 
     @Mod.EventHandler
-    public void preInit(final FMLPreInitializationEvent event) throws IConfig.ConfigException, IOException, APIException
+    public void preInit(final FMLPreInitializationEvent event) throws IOException, APIException
     {
         super.setModVersion(event.getModMetadata().version);
         super.setMcVersion(MinecraftForge.MC_VERSION);
         super.setBranding(FMLCommonHandler.instance().getModName());
         super.setLogger(new Log4jLogger(event.getModLog()));
-        super.setConfig(new ForgeConfig(event.getSuggestedConfigurationFile()));
+        super.setConfigFolder(event.getModConfigurationDirectory());
         super.init();
 
-        if (event.getSide().isClient())
-        {
-            super.setSide(Side.CLIENT);
-            return;
-        }
+        if (event.getSide().isClient()) return;
 
-        super.setSide(Side.SERVER);
         MinecraftForge.EVENT_BUS.register(this);
     }
 
@@ -152,5 +146,17 @@ public class MCLink extends MCLinkCommon
     public void sendMessage(String message, FormatCode formatCode)
     {
         sendMessage(message);
+    }
+
+    @Override
+    public void sendMessageAsync(String message)
+    {
+        server.addScheduledTask(() -> sendMessage(message));
+    }
+
+    @Override
+    public void sendMessageAsync(String message, FormatCode formatCode)
+    {
+        server.addScheduledTask(() -> sendMessage(message, formatCode));
     }
 }

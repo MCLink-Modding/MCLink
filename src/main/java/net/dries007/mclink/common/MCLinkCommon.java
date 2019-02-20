@@ -14,7 +14,9 @@ import net.dries007.mclink.binding.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,11 +34,10 @@ public abstract class MCLinkCommon implements IMinecraft
     private final ConcurrentHashMap<UUID, Marker> UUID_STATUS_MAP = new ConcurrentHashMap<>();
 
     private ILogger logger = null;
-    private IConfig config = null;
+    private TomlConfig config = null;
 
     private String modVersion = "";
     private String mcVersion = "";
-    private Side side = Side.UNKNOWN;
 
     private Status latestStatus;
     private String branding;
@@ -46,7 +47,7 @@ public abstract class MCLinkCommon implements IMinecraft
     @Nullable
     protected abstract String nameFromUUID(UUID uuid);
 
-    public void init() throws IConfig.ConfigException, IOException, APIException
+    public void init() throws IOException, APIException
     {
         API.setMetaData(getBranding(), getModVersion(), getMcVersion());
 
@@ -128,22 +129,22 @@ public abstract class MCLinkCommon implements IMinecraft
                 if (Strings.isNullOrEmpty(msg))
                 {
                     logger.info("Config reloaded by {0}. All OK.", sender.getName());
-                    sender.sendMessage("Reloaded!", FormatCode.GREEN);
+                    sender.sendMessageAsync("Reloaded!", FormatCode.GREEN);
                 }
                 else
                 {
                     logger.warn("Config reloaded by {0}, with warnings: {1}", sender, msg);
-                    sender.sendMessage("Reloaded with warning:", FormatCode.YELLOW);
-                    sender.sendMessage(msg, FormatCode.YELLOW);
+                    sender.sendMessageAsync("Reloaded with warning:", FormatCode.YELLOW);
+                    sender.sendMessageAsync(msg, FormatCode.YELLOW);
                 }
             }
             catch (Throwable e)
             {
                 logger.error("Config reloaded by {0}, with errors: {1}", sender, e.getMessage());
                 logger.catching(e);
-                sender.sendMessage("Error while reloading! Exceptions:", FormatCode.RED);
+                sender.sendMessageAsync("Error while reloading! Exceptions:", FormatCode.RED);
                 do
-                    sender.sendMessage(MessageFormat.format("{0}: {1}", e.getClass().getSimpleName(), e.getMessage()), FormatCode.RED);
+                    sender.sendMessageAsync(MessageFormat.format("{0}: {1}", e.getClass().getSimpleName(), e.getMessage()), FormatCode.RED);
                 while ((e = e.getCause()) != null);
             }
         }, Constants.MODNAME + "-reloadConfigAsync").start();
@@ -264,7 +265,7 @@ public abstract class MCLinkCommon implements IMinecraft
             // Cache contains previous auth values IF it was NOT empty.
             ImmutableCollection<Authentication> auth = CACHE.getIfPresent(player.getUuid());
             if (auth == null)
-                auth = API.getAuthorization(config.getTokenConfig(), player.getUuid()).get(player.getUuid());
+                auth = API.getAuthorizationNamed(config.getServices(), player.getUuid()).get(player.getUuid());
             if (auth.isEmpty() && shouldKick) // Still empty & kick
             {
                 logger.info("Player {0} authorization was denied by MCLink.", player);
@@ -352,24 +353,19 @@ public abstract class MCLinkCommon implements IMinecraft
     }
 
     @Override
-    public final IConfig getConfig()
+    public final TomlConfig getConfig()
     {
         return config;
     }
 
-    public void setConfig(IConfig config)
+    public void setConfigFolder(File configFolder)
     {
-        this.config = config;
+        config = new TomlConfig(configFolder);
     }
 
-    public final Side getSide()
+    public void setConfigFolder(Path configFolder)
     {
-        return side;
-    }
-
-    public void setSide(Side side)
-    {
-        this.side = side;
+        config = new TomlConfig(configFolder);
     }
 
     @NotNull
@@ -388,7 +384,6 @@ public abstract class MCLinkCommon implements IMinecraft
                 ", config=" + config +
                 ", modVersion='" + modVersion + '\'' +
                 ", mcVersion='" + mcVersion + '\'' +
-                ", side=" + side +
                 ", latestStatus=" + latestStatus +
                 '}';
     }
@@ -396,10 +391,5 @@ public abstract class MCLinkCommon implements IMinecraft
     public enum Marker
     {
         ALLOWED, IN_PROGRESS, DENIED_NO_AUTH, DENIED_ERROR, DENIED_CLOSED
-    }
-
-    public enum Side
-    {
-        UNKNOWN, SERVER, CLIENT
     }
 }

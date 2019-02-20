@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 - 2018 Dries007. All rights reserved
+ * Copyright (c) 2017 - 2019 Dries007. All rights reserved
  */
 
 package net.dries007.mclink.api;
@@ -193,6 +193,7 @@ public final class API
      * @see #getAuthorization(Table, Iterable)
      */
     @NotNull
+    @Deprecated
     public static ImmutableMultimap<UUID, Authentication> getAuthorization(@NotNull Table<String, String, List<String>> tokenconfig, @NotNull UUID... uuids) throws IOException, APIException
     {
         return getAuthorization(tokenconfig, Arrays.asList(uuids));
@@ -207,17 +208,9 @@ public final class API
      * The cell values are a list of Service parameters. If no parameters are to be used, use an empty list.
      */
     @NotNull
+    @Deprecated
     public static ImmutableMultimap<UUID, Authentication> getAuthorization(@NotNull Table<String, String, List<String>> tokenTable, @NotNull Iterable<UUID> uuids) throws IOException, APIException
     {
-        JsonObject root = new JsonObject();
-
-        JsonArray uuidArray = new JsonArray();
-        for (UUID token : uuids)
-        {
-            uuidArray.add(new JsonPrimitive(token.toString()));
-        }
-        root.add("uuids", uuidArray);
-
         JsonObject tokensObject = new JsonObject();
         for (Entry<String, Map<String, List<String>>> row : tokenTable.rowMap().entrySet())
         {
@@ -233,6 +226,64 @@ public final class API
             }
             tokensObject.add(row.getKey(), rowObject);
         }
+        return getAuthorization(tokensObject, uuids);
+    }
+
+    /**
+     * @see #getAuthorizationNamed(Table, Iterable)
+     */
+    @NotNull
+    public static ImmutableMultimap<UUID, Authentication> getAuthorizationNamed(@NotNull Table<String, String, Map<String, ?>> tokenconfig, @NotNull UUID... uuids) throws IOException, APIException
+    {
+        return getAuthorizationNamed(tokenconfig, Arrays.asList(uuids));
+    }
+
+    /**
+     * @see #getAuthorization(Table, Iterable)
+     * EXCEPT: The cell values are a map of key-value names for parameters. If no parameters are used, use an empty map.
+     */
+    @NotNull
+    public static ImmutableMultimap<UUID, Authentication> getAuthorizationNamed(@NotNull Table<String, String, Map<String, ?>> tokenTable, @NotNull Iterable<UUID> uuids) throws IOException, APIException
+    {
+        JsonObject tokensObject = new JsonObject();
+        for (Entry<String, Map<String, Map<String, ?>>> row : tokenTable.rowMap().entrySet())
+        {
+            JsonObject rowObject = new JsonObject();
+            for (Entry<String, Map<String, ?>> service : row.getValue().entrySet())
+            {
+                JsonObject parameterObject = new JsonObject();
+                for (Map.Entry<String, ?> e : service.getValue().entrySet())
+                {
+                    parameterObject.add(e.getKey(), parameterToJson(e.getValue()));
+                }
+                rowObject.add(service.getKey(), parameterObject);
+            }
+            tokensObject.add(row.getKey(), rowObject);
+        }
+        return getAuthorization(tokensObject, uuids);
+    }
+
+    private static JsonElement parameterToJson(Object value)
+    {
+        // todo THIS IS BROKEN !!
+        // todo this needs some figuring out what toml returns on a primitive vs an object vs an array vs who knows what else.
+        return new JsonPrimitive(String.valueOf(value));
+    }
+
+    // -- PRIVATES --
+
+    @NotNull
+    private static ImmutableMultimap<UUID, Authentication> getAuthorization(@NotNull JsonObject tokensObject, @NotNull Iterable<UUID> uuids) throws IOException, APIException
+    {
+        JsonObject root = new JsonObject();
+
+        JsonArray uuidArray = new JsonArray();
+        for (UUID token : uuids)
+        {
+            uuidArray.add(new JsonPrimitive(token.toString()));
+        }
+        root.add("uuids", uuidArray);
+
         root.add("tokens", tokensObject);
 
         root = doPostRequest(URL_AUTHENTICATE, root).getAsJsonObject();
@@ -248,8 +299,6 @@ public final class API
         return b.build();
     }
 
-    // -- PRIVATES --
-
     @NotNull
     public static JsonElement doGetRequest(@NotNull URL url) throws IOException, APIException
     {
@@ -261,47 +310,16 @@ public final class API
     {
         String query = urlEncode(params);
         String location = url.toString();
-        HttpURLConnection con;
+        HttpURLConnection con = null;
         do
         {
             url = new URL(url, location + query);
-            con = ((HttpURLConnection) url.openConnection());
-            con.setRequestMethod("GET");
-            con.setInstanceFollowRedirects(true);
-            con.setAllowUserInteraction(false);
-            con.setConnectTimeout(timeout);
-            con.setReadTimeout(timeout);
-            con.setRequestProperty("User-Agent", userAgent);
-            con.setRequestProperty("Accept-Charset", Constants.UTF8.name());
-            con.setRequestProperty("Accept", "application/json");
+            if (con != null) con.disconnect();
+            con = createConnection("GET", url);
             location = con.getHeaderField("Location");
         }
         while (location != null && con.getResponseCode() / 100 == 3);
         return parseConnectionOutput(con);
-    }
-
-    @NotNull
-    private static JsonElement parseConnectionOutput(@NotNull HttpURLConnection con) throws IOException, APIException
-    {
-        try
-        {
-            InputStream is = con.getErrorStream();
-            if (is == null) is = con.getInputStream();
-            JsonElement e = new JsonParser().parse(new InputStreamReader(is));
-            if (e.isJsonObject())
-            {
-                JsonObject root = e.getAsJsonObject();
-                if (root.has("error") && root.get("error").getAsBoolean())
-                {
-                    throw new APIException(root.get("status").getAsInt(), root.get("description").getAsString());
-                }
-            }
-            return e;
-        }
-        catch (JsonParseException e)
-        {
-            throw new IOException("Error parsing JSON. The backend is likely offline or is having a serious error.", e);
-        }
     }
 
     @NotNull
@@ -320,17 +338,8 @@ public final class API
         do
         {
             url = new URL(url, location + query);
-            con = ((HttpURLConnection) url.openConnection());
-            con.setRequestMethod("POST");
-            con.setInstanceFollowRedirects(true);
-            con.setAllowUserInteraction(false);
-            con.setConnectTimeout(timeout);
-            con.setReadTimeout(timeout);
+            con = createConnection("POST", url);
             con.setDoOutput(true);
-            con.setRequestProperty("User-Agent", userAgent);
-            con.setRequestProperty("Accept-Charset", Constants.UTF8.name());
-            con.setRequestProperty("Accept", "application/json");
-            con.setRequestProperty("Content-Type", "application/json; charset=" + Constants.UTF8.name());
             DataOutputStream os = new DataOutputStream(con.getOutputStream());
             os.writeBytes(data);
             os.flush();
@@ -340,6 +349,53 @@ public final class API
         return parseConnectionOutput(con);
     }
 
+    @NotNull
+    private static HttpURLConnection createConnection(String method, URL url) throws IOException
+    {
+        HttpURLConnection con = ((HttpURLConnection) url.openConnection());
+        con.setRequestMethod(method);
+        con.setInstanceFollowRedirects(true);
+        con.setAllowUserInteraction(false);
+        con.setConnectTimeout(timeout);
+        con.setReadTimeout(timeout);
+        con.setRequestProperty("User-Agent", userAgent);
+        con.setRequestProperty("Accept-Charset", Constants.UTF8.name());
+        con.setRequestProperty("Accept", "application/json");
+        con.setRequestProperty("Content-Type", "application/json; charset=" + Constants.UTF8.name());
+        return con;
+    }
+
+    @NotNull
+    private static JsonElement parseConnectionOutput(@NotNull HttpURLConnection con) throws IOException, APIException
+    {
+        InputStream is = null;
+        try
+        {
+            is = con.getErrorStream();
+            if (is == null) is = con.getInputStream();
+            JsonElement e = new JsonParser().parse(new InputStreamReader(is));
+            if (e.isJsonObject())
+            {
+                JsonObject root = e.getAsJsonObject();
+                if (root.has("error") && root.get("error").getAsBoolean())
+                {
+                    throw new APIException(root.get("status").getAsInt(), root.get("description").getAsString());
+                }
+            }
+            return e;
+        }
+        catch (JsonParseException e)
+        {
+            throw new IOException("Error parsing JSON. The backend is likely offline or is having a serious error.", e);
+        }
+        finally
+        {
+            if (is != null) is.close();
+            con.disconnect();
+        }
+    }
+
+    @NotNull
     private static URL getURL(String endpoint)
     {
         try

@@ -1,0 +1,46 @@
+# Help with TOML config language: https://github.com/toml-lang/toml (Version 0.5)
+# If you need help: Reach out via Discord (prefered), Twitter or Email. Links on the website: https://mclink.dries007.net/about
+[mclink]
+# This variable is updated with the command "/mclink close" or "/mclink open".
+# You can change it yourself, but only if the server is not running.
+closed = false
+# Set to true to allow everyone to join and use MCLink only to fire an event some other mod/plugin can use.
+freeToJoin = false
+# Send the MCLink status message to ops when they join. Highly recommend you leave this on. This will contain important messages.
+showStatus = true
+# Timeout for the API requests in seconds. Keep this high enough to avoid players being kicked while actually being authorized. 0 = infinite timeout (bad idea)
+timeout = 30
+# -------------------------
+# Customisable Messages
+# Add color or newlines at your own risk. They don't seem to work well in the kicked screen.
+[mclink.messages]
+# Customize this message in particular.
+kick="This is an MCLink protected server. Link your accounts via https://mclink.dries007.net and make sure you are subscribed to the right people."
+error="MCLink could not verify your status. Please contact a server admin."
+closed="The server is currently closed for the public."
+# -------------------------
+# Services Configuration
+# Each service has different parameters, some are optional, some are required.
+# To get an UP TO DATE example for each service, go to config help page here: https://mclink.dries007.net/help/config
+# You can use any combination of services with any combination of different tokens, just add more blocks.
+# ---- Example 1: Patreon, 5$ or more.
+[[mclink.services]]
+name="Patreon"
+token="YOUR TOKEN HERE"
+amount_cents=500
+# ---- Example 2: Twitch, any level
+[[mclink.services]]
+name="Twitch"
+token="YOUR TOKEN HERE"
+# sub_plan="Prime" # Optional! If not specified, any tier works. The accepted values are "Prime", "1000", "2000" and "3000".
+# sub_plan="1000" # This would allow only tier 1 and up subs. Prime subs would not be able to join.
+
+# -------------------------
+#       [Danger Zone]
+# -------------------------
+# Not yet released features. Do not use. If you want this, contact me. I may have a beta update.
+[mclink.experimental]
+# When players first join, put them in spectator mode until they can be authenticated. They are teleported back once authenticated.
+# initialJoinSpectator = false
+# Allow anyone to join, but only in spectator mode if they are not authenticated. They are teleported back once authenticated.
+# freeSpectator = false

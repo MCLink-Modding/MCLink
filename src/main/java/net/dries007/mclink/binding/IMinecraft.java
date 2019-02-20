@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2017 - 2018 Dries007. All rights reserved
+ * Copyright (c) 2017 - 2019 Dries007. All rights reserved
  */
 
 package net.dries007.mclink.binding;
 
+import net.dries007.mclink.common.TomlConfig;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,7 +26,7 @@ public interface IMinecraft extends ISender
 
     ILogger getLogger();
 
-    IConfig getConfig();
+    TomlConfig getConfig();
 
     boolean open();
 

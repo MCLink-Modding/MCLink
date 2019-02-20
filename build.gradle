@@ -2,7 +2,7 @@ import groovy.json.JsonBuilder
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 
-version = "0.3.2"
+version = "0.4.0"
 if (System.getenv().BUILD_NUMBER != null) version += "." + System.getenv().BUILD_NUMBER
 
 subprojects {
@@ -44,6 +44,7 @@ dependencies {
     compile 'com.google.code.gson:gson:2.2.4'
     compile 'org.apache.logging.log4j:log4j-core:2.0-beta9'
     compile 'org.jetbrains:annotations:15.0'
+    compile 'com.electronwill.night-config:toml:3.4.0'
 }
 
 //noinspection GroovyAssignabilityCheck
@@ -75,24 +76,21 @@ subprojects {
     }
 
     if (project.hasProperty('minecraft')) {
-        sourceJar {
-            //noinspection GroovyAssignabilityCheck
-            duplicatesStrategy = 'exclude'
-            from rootProject.sourceSets.main.allSource
-        }
+
+        def mcversion = project.minecraft.hasProperty('version') ? project.minecraft.version : project.MC_VERSION
 
         //noinspection GroovyAssignabilityCheck
         project.tasks.withType(Jar) { jarTask ->
-            jarTask.appendix = 'Forge-' + project.minecraft.version
+            jarTask.appendix = 'Forge-' + mcversion
         }
 
         processResources {
             inputs.property "version", project.version
-            inputs.property "mcversion", project.minecraft.version
+            inputs.property "mcversion", mcversion
 
             from(sourceSets.main.resources.srcDirs) {
                 include 'mcmod.info'
-                expand 'version': project.version, 'mcversion': project.minecraft.version
+                expand 'version': project.version, 'mcversion': mcversion
             }
 
             from(sourceSets.main.resources.srcDirs) {
@@ -110,12 +108,12 @@ subprojects {
                     json = builder(homepage: "https://mclink.dries007.net", promos: new HashMap<>())
                 }
                 //noinspection GroovyAssignabilityCheck
-                json['promos'][project.minecraft.version + '-latest'] = project.version
+                json['promos'][mcversion + '-latest'] = project.version
                 //noinspection GroovyAssignabilityCheck
-                json['promos'][project.minecraft.version + '-recommended'] = project.version
-                if (!json.containsKey(project.minecraft.version)) json.put(project.minecraft.version, new HashMap<>())
+                json['promos'][mcversion + '-recommended'] = project.version
+                if (!json.containsKey(mcversion)) json.put(mcversion, new HashMap<>())
                 //noinspection GroovyAssignabilityCheck
-                def version = json[project.minecraft.version]
+                def version = json[mcversion]
                 version.put(project.version, getChangeLog())
                 updateFile.write JsonOutput.prettyPrint(JsonOutput.toJson(json))
             }
