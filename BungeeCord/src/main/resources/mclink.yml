@@ -13,17 +13,6 @@
 # Blank ones will be added if new services are added, old ones are not removed.
 # Check the MCLink website for a config file example.
 #
-# services.GameWisp
-# ~~~~~~~~~~
-# Website: https://www.gamewisp.com
-# Arguments must be in this exact order. Use an empty string ("") to skip an argument.
-# Only put in values, not the names of the arguments.
-# Required arguments:
-#  - TOKEN: Your api token.
-#  - tier_id: Must be an integer. Minimal tier.
-# Optional arguments:
-#
-#
 # services.Patreon
 # ~~~~~~~~~~
 # Website: https://www.patreon.com
@@ -54,7 +43,6 @@ general:
   closed: false
   timeout: 30
 services:
-  GameWisp: []
   Patreon:
     - TOKEN1 0
     - TOKEN2 1000

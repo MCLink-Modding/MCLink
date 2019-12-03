@@ -5,7 +5,6 @@
 package net.dries007.mclink;
 
 import com.google.common.collect.ImmutableCollection;
-
 import net.dries007.mclink.api.Authentication;
 import net.dries007.mclink.common.MCLinkCommon;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
@@ -18,13 +17,16 @@ import net.md_5.bungee.api.plugin.Event;
  * @author Brian Ronald
  * @author Dries007
  */
-public class MCLinkAuthEvent extends Event {
+public class MCLinkAuthEvent extends Event
+{
     private final ImmutableCollection<Authentication> authentication;
     private final MCLinkCommon.Marker result;
     private final ProxiedPlayer player;
 
-    MCLinkAuthEvent(ProxiedPlayer player, ImmutableCollection<Authentication> authentication, MCLinkCommon.Marker result) {
-        if (result == MCLinkCommon.Marker.IN_PROGRESS) {
+    MCLinkAuthEvent(ProxiedPlayer player, ImmutableCollection<Authentication> authentication, MCLinkCommon.Marker result)
+    {
+        if (result == MCLinkCommon.Marker.IN_PROGRESS)
+        {
             throw new IllegalStateException();
         }
         this.player = player;
@@ -32,15 +34,18 @@ public class MCLinkAuthEvent extends Event {
         this.result = result;
     }
 
-    public ProxiedPlayer getPlayer() {
+    public ProxiedPlayer getPlayer()
+    {
         return player;
     }
 
-    public ImmutableCollection<Authentication> getAuthentication() {
+    public ImmutableCollection<Authentication> getAuthentication()
+    {
         return authentication;
     }
 
-    public MCLinkCommon.Marker getResult() {
+    public MCLinkCommon.Marker getResult()
+    {
         return result;
     }
 }

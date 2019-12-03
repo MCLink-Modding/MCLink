@@ -4,5 +4,6 @@ include '1.10.2'
 include '1.7.10'
 
 include 'Bukkit'
+include 'BungeeCord'
 
 rootProject.name = 'MCLink'

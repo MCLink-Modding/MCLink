@@ -4,13 +4,7 @@
 
 package net.dries007.mclink;
 
-import java.util.UUID;
-import java.util.logging.Level;
-
-import org.jetbrains.annotations.Nullable;
-
 import com.google.common.collect.ImmutableCollection;
-
 import net.dries007.mclink.api.Authentication;
 import net.dries007.mclink.binding.FormatCode;
 import net.dries007.mclink.binding.IPlayer;
@@ -25,28 +19,38 @@ import net.md_5.bungee.api.event.ServerConnectEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.event.EventHandler;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.UUID;
+import java.util.logging.Level;
 
 /**
  * @author Dries007
  */
-public final class MCLink extends Plugin implements Listener {
-    private final MCLinkCommon common = new MCLinkCommon() {
+public final class MCLink extends Plugin implements Listener
+{
+    private final MCLinkCommon common = new MCLinkCommon()
+    {
         @Override
-        public void sendMessage(String message) {
+        public void sendMessage(String message)
+        {
             getProxy().broadcast(TextComponent.fromLegacyText(message));
         }
 
         @Override
-        public void sendMessage(String message, FormatCode formatCode) {
+        public void sendMessage(String message, FormatCode formatCode)
+        {
             sendMessage(message);
         }
 
         @Override
-        protected void authCompleteAsync(IPlayer player, ImmutableCollection<Authentication> authentications, Marker result) {
+        protected void authCompleteAsync(IPlayer player, ImmutableCollection<Authentication> authentications, Marker result)
+        {
             getProxy().getScheduler().runAsync(MCLink.this, () -> {
                 // Only kick if we should
 
-                if (result != Marker.ALLOWED) {
+                if (result != Marker.ALLOWED)
+                {
                     ProxiedPlayer p = getProxy().getPlayer(player.getUuid());
                     if (p != null) // null check in case user disconnected
                     {
@@ -60,23 +64,28 @@ public final class MCLink extends Plugin implements Listener {
 
         @Nullable
         @Override
-        protected String nameFromUUID(UUID uuid) {
+        protected String nameFromUUID(UUID uuid)
+        {
             ProxiedPlayer player = getProxy().getPlayer(uuid);
             return player == null ? null : player.getName();
         }
     };
 
-    private Player getPlayerFromOfflinePlayer(PendingConnection player) {
-        return player.getName() == null ? new Player(null, player.getName(), player.getUniqueId()) : getPlayerFromEntity(player);
+    private Player getPlayerFromOfflinePlayer(PendingConnection player)
+    {
+        return player.getName() == null ? new Player(null, "???", player.getUniqueId()) : getPlayerFromEntity(player);
     }
 
-    private Player getPlayerFromEntity(PendingConnection player) {
+    private Player getPlayerFromEntity(PendingConnection player)
+    {
         return new Player(new SenderWrapper(getProxy().getPlayer(player.getUniqueId())), player.getName(), player.getUniqueId());
     }
 
     @Override
-    public void onEnable() {
-        try {
+    public void onEnable()
+    {
+        try
+        {
             getLogger().setLevel(Level.FINEST);
 
             common.setModVersion(getDescription().getVersion());
@@ -92,20 +101,24 @@ public final class MCLink extends Plugin implements Listener {
             common.registerCommands(e -> getProxy().getPluginManager().registerCommand(this, new CommandWrapper(e, common)));
 
             common.getLogger().info("Enabled");
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             common.getLogger().error("WARNING! Something went wrong initializing... People won't be able to join.");
             common.getLogger().catching(e);
         }
     }
 
     @Override
-    public void onDisable() {
+    public void onDisable()
+    {
         common.getLogger().info("Disabled");
         common.deInit();
     }
 
     @EventHandler
-    public void onAsyncPlayerPreLogin(PostLoginEvent event) {
+    public void onAsyncPlayerPreLogin(PostLoginEvent event)
+    {
         ProxiedPlayer pl = event.getPlayer();
         boolean op = pl.hasPermission("bungeecord.command.alert");
         boolean wl = false;
@@ -114,7 +127,8 @@ public final class MCLink extends Plugin implements Listener {
     }
 
     @EventHandler
-    public void onPlayerLoginEvent(ServerConnectEvent event) {
+    public void onPlayerLoginEvent(ServerConnectEvent event)
+    {
         common.login(getPlayerFromEntity(event.getPlayer().getPendingConnection()), event.getPlayer().hasPermission("bungeecord.command.alert"));
     }
 }
