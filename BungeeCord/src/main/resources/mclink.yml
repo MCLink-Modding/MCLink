@@ -1,0 +1,63 @@
+# MCLink
+# ==========
+# general.kickMessage: The message used to kickAsync players. Make sure to include instructions on how to get on!
+# general.errorMessage: The message people get when an error happens while MCLink checks their ID.
+# general.closedMessage: The message people get when the server is closed.
+# general.showStatus: Show important status messages to level 2+ OP players when they log in.
+# general.closed: Use the ingame command /mclink to update this. Keeps track of if the server is closed.
+# general.timeout: Timeout for the API requests in seconds. Keep this high enough to avoid players being kicked while actually being authorized. 0 = infinite timeout
+#
+# SERVICES
+# ----------
+# All service options are put here.
+# Blank ones will be added if new services are added, old ones are not removed.
+# Check the MCLink website for a config file example.
+#
+# services.GameWisp
+# ~~~~~~~~~~
+# Website: https://www.gamewisp.com
+# Arguments must be in this exact order. Use an empty string ("") to skip an argument.
+# Only put in values, not the names of the arguments.
+# Required arguments:
+#  - TOKEN: Your api token.
+#  - tier_id: Must be an integer. Minimal tier.
+# Optional arguments:
+#
+#
+# services.Patreon
+# ~~~~~~~~~~
+# Website: https://www.patreon.com
+# Arguments must be in this exact order. Use an empty string ("") to skip an argument.
+# Only put in values, not the names of the arguments.
+# Required arguments:
+#  - TOKEN: Your api token.
+#  - amount_cents: Must be an integer. Minimal amount of money pledged, in cents.
+# Optional arguments:
+#
+#
+# services.Twitch
+# ~~~~~~~~~~
+# Website: https://twitch.tv
+# Arguments must be in this exact order. Use an empty string ("") to skip an argument.
+# Only put in values, not the names of the arguments.
+# Required arguments:
+#  - TOKEN: Your api token.
+# Optional arguments:
+#  - sub_plan: Accepted values: 'Prime', '1000', '2000', '3000' If provided, sets the minimal sub_plan. Prime is lowest (set equivalent to 1). By default, all tiers are accepted.
+
+general:
+  kickMessage: This is an MCLink protected server. Link your accounts via https://mclink.dries007.net
+    and make sure you are subscribed to the right people.
+  errorMessage: MCLink could not verify your status. Please contact a server admin.
+  closedMessage: The server is currently closed for the public.
+  showStatus: true
+  closed: false
+  timeout: 30
+services:
+  GameWisp: []
+  Patreon:
+    - TOKEN1 0
+    - TOKEN2 1000
+  Twitch:
+    - TOKEN2
+    - TOKEN3 2000

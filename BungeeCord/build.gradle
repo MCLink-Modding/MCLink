@@ -1,0 +1,24 @@
+plugins {
+    id "com.matthewprenger.cursegradle" version "1.4.0"
+}
+apply plugin: 'java'
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'sonatype'
+        url = 'https://oss.sonatype.org/content/groups/public/'
+    }
+}
+
+dependencies {
+    compile 'net.md-5:bungeecord-api:1.14-SNAPSHOT'
+}
+
+import org.apache.tools.ant.filters.ReplaceTokens
+
+processResources {
+    from(sourceSets*.resources.srcDirs) {
+        filter ReplaceTokens, tokens: [version: rootProject.version]
+    }
+}
